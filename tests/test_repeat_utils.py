@@ -87,9 +87,12 @@ class TestApplyVariantToRepeat:
         assert result == "AATA"
 
     def test_variant_before_repeat(self):
-        """Test variant starting before repeat."""
+        """Test variant starting before repeat and overlapping its start."""
         result = apply_variant_to_repeat(98, "CCA", "T", 100, "AAAA")
-        assert result == "AAA"
+        # Overlap is only at position 100 (the last 'A' of "CCA")
+        # so effectively ALT='T' is applied at repeat position 0:
+        # repeat_seq = "AAAA" -> "TAAA"
+        assert result == "TAAA"
 
     def test_variant_at_end(self):
         """Test variant at end of repeat."""
@@ -172,6 +175,151 @@ class TestApplyVariantToRepeat:
         """
         assert count_repeat_units("ATATAT", "A") == 1
 
+
+    def test_variant_entirely_before_repeat_no_overlap(self):
+        """
+        Variant ends before the repeat starts: STR sequence must be unchanged.
+        repeat: positions 100..103 (len=4), variant at 95 with len(ref)=2 -> ends at 96.
+        """
+        repeat_seq = "AAAA"
+        result_ref = apply_variant_to_repeat(
+            pos=95,
+            ref="AC",
+            alt="TG",
+            repeat_start=100,
+            repeat_seq=repeat_seq,
+        )
+        assert result_ref == repeat_seq
+
+    def test_variant_entirely_after_repeat_no_overlap(self):
+        """
+        Variant starts after the repeat ends: STR sequence must be unchanged.
+        repeat: 100..103, variant starts at 105.
+        """
+        repeat_seq = "AAAA"
+        result_ref = apply_variant_to_repeat(
+            pos=105,
+            ref="AC",
+            alt="TG",
+            repeat_start=100,
+            repeat_seq=repeat_seq,
+        )
+        assert result_ref == repeat_seq
+
+    def test_variant_extends_beyond_end_ref_and_alt_consistent(self):
+        """
+        Variant extends beyond the end of the STR:
+        - applying REF as ALT must leave repeat_seq unchanged
+        - applying real ALT must only modify overlapping part.
+
+        repeat_start = 100
+        repeat_seq   = TTTTTTTTTT (10 Ts, positions 100..109)
+        variant pos  = 104 (inside STR), ref length 11 -> ends at 114 (> 109)
+        """
+        repeat_start = 100
+        repeat_seq = "TTTTTTTTTT"  # len = 10
+
+        pos = 104
+        ref = "TTTTTTTTTTT"       # 11 Ts
+        alt_same = ref            # same as ref, should NOT change STR
+        alt_mut = "AAAAAAAAAAA"   # 11 As
+
+        # 1) Applying REF as ALT: no change
+        seq_ref = apply_variant_to_repeat(
+            pos=pos,
+            ref=ref,
+            alt=alt_same,
+            repeat_start=repeat_start,
+            repeat_seq=repeat_seq,
+        )
+        assert seq_ref == repeat_seq
+
+        # 2) Applying ALT: only overlapping part is changed
+        seq_alt = apply_variant_to_repeat(
+            pos=pos,
+            ref=ref,
+            alt=alt_mut,
+            repeat_start=repeat_start,
+            repeat_seq=repeat_seq,
+        )
+
+        # We only replace the overlapping part:
+        # relative_pos = 104-100 = 4
+        # overlap_len  = min(len(ref)=11, repeat_len-relative_pos=6) = 6
+        # repeat_seq[0:4] = "TTTT"
+        # alt_overlap[0:6] = "AAAAAA"
+        # result = "TTTT" + "AAAAAA" = "TTTTAAAAAA"
+        assert seq_alt == "TTTTAAAAAA"
+
+    def test_lowercase_ref_alt_with_uppercase_repeat_identity(self):
+        """
+        Lowercase REF/ALT from VCF on an uppercase STR panel.
+
+        Applying REF as ALT (identity) must leave the STR sequence unchanged,
+        even though REF/ALT are lowercase.
+        """
+        repeat_start = 100
+        repeat_seq = "AAAAAAAAAA"       # STR panel (uppercase)
+        pos = 100
+        ref = "aaaaaaaaaa"             # VCF gives lowercase
+        alt = "aaaaaaaaaa"             # same as ref
+
+        mutated = apply_variant_to_repeat(
+            pos=pos,
+            ref=ref,
+            alt=alt,
+            repeat_start=repeat_start,
+            repeat_seq=repeat_seq,
+        )
+        assert mutated == repeat_seq   # no mismatch due to case
+
+    def test_lowercase_repeat_and_alt_preserve_lowercase(self):
+        """
+        When the STR sequence is lowercase, ALT should also be applied in lowercase.
+        """
+        repeat_start = 100
+        repeat_seq = "aaaaaaaaaa"      # lowercase STR
+        pos = 100
+        ref = "aaaaaaaaaa"
+        alt = "tttttttttt"
+
+        mutated = apply_variant_to_repeat(
+            pos=pos,
+            ref=ref,
+            alt=alt,
+            repeat_start=repeat_start,
+            repeat_seq=repeat_seq,
+        )
+        assert mutated == "tttttttttt"  # all lowercase, matching STR case
+
+    def test_apply_real_variant(self):
+        pos = 45512562
+        ref = "cacacacacacacacacacacacaca"
+        alt = "cacacacacacacacacacacaca"
+        mutated = apply_variant_to_repeat(
+            pos=pos,
+            ref=ref,
+            alt=alt,
+            repeat_start=pos,
+            repeat_seq=ref,
+        )
+        assert mutated == alt
+        # chr15	78938368	78938381	1	A
+        # chr15	78939176	.	aaaaaaaaaaaaaaaa	aaaaaaaaaaaaaaaaa
+        # It is a mismatch of panels
+        repeat_start = 78938369
+        repeat_seq = "AAAAAAAAAAAAA"
+        pos = 78939176
+        ref = "aaaaaaaaaaaaaaaa"
+        alt = "aaaaaaaaaaaaaaaaa"
+        mutated = apply_variant_to_repeat(
+            pos=pos,
+            ref=ref,
+            alt=alt,
+            repeat_start=repeat_start,
+            repeat_seq=repeat_seq,
+        )
+        assert mutated == "AAAAAAAAAAAAA"
 
 class TestIsPerfectRepeat:
     """Test suite for is_perfect_repeat."""

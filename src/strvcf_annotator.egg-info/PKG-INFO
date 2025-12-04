@@ -1,8 +1,8 @@
 Metadata-Version: 2.4
 Name: strvcf-annotator
-Version: 0.1.0
+Version: 0.2.2
 Summary: STR annotation tool for VCF files
-Home-page: https://github.com/KondratievaOlesya/strvcf_annotator
+Home-page: https://github.com/acg-team/strvcf_annotator
 Author: Olesia Kondrateva
 Author-email: Olesia Kondrateva <xkdnoa@gmail.com>
 License: MIT
@@ -64,11 +64,16 @@ Features
 
 Installation
 ------------
+Package is available through `PyPI <https://pypi.org/project/strvcf-annotator/>`_. To install, type:
 
 .. code-block:: shell
 
+    pip install strvcf-annotator
+    
+.. code-block:: shell
+
     # Install from source
-    git clone https://github.com/KondratievaOlesya/strvcf_annotator.git
+    git clone https://github.com/acg-team/strvcf_annotator.git
     cd strvcf_annotator
     pip install -e .
 

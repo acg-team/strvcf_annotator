@@ -161,7 +161,14 @@ def generate_annotated_records(
             continue
 
         # Build and yield annotated record
-        yield build_new_record(record, str_row, header, parser)
+        new_record = build_new_record(record, str_row, header, parser)
+
+        # Skip if alt == ref
+        # It happens if variant was not normalized and actually happens outside of STR region
+        if new_record.alleles[0] == new_record.alleles[1]:
+            continue
+
+        yield new_record
 
     # Log summary if records were skipped
     if skipped_count > 0:

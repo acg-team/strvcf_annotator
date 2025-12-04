@@ -12,6 +12,7 @@ from .repeat_utils import (
     count_repeat_units,
     extract_repeat_sequence,
     is_perfect_repeat,
+    is_motif_continuation
 )
 
 logger = logging.getLogger(__name__)
@@ -126,24 +127,58 @@ def build_new_record(
     repeat_seq = extract_repeat_sequence(str_row)
     ref_base = record.ref
     alt_base = record.alts[0] if record.alts else ref_base
+    repeat_len = len(repeat_seq)
+    repeat_end = repeat_start + repeat_len - 1
 
     # Verify reference matches
-    reference_seq = repeat_seq
-    tmp_seq = apply_variant_to_repeat(record.pos, ref_base, ref_base, repeat_start, repeat_seq)
-    if tmp_seq != reference_seq:
-        logger.warning(
-            f"Reference mismatch: VCF {record.contig}:{record.pos} {record.alleles[0]}>{record.alleles[1]}, "
-            f"STR panel {str_row['CHROM']}:{str_row['START']}-{str_row['END']} RU={str_row['RU']}"
-        )
+    var_start = record.pos
+    var_end = record.pos + len(ref_base) - 1  # inclusive
+
+    # --- 1) Check overlap between REF and panel sequence ---
+    # Compute genomic overlap between [var_start, var_end] and [repeat_start, repeat_end]
+    overlap_start = max(repeat_start, var_start)
+    overlap_end = min(repeat_end, var_end)
+
+    if overlap_start <= overlap_end:
+        overlap_len = overlap_end - overlap_start + 1
+
+        # Indices into repeat_seq (0-based)
+        rep_start_idx = overlap_start - repeat_start
+        rep_end_idx_excl = rep_start_idx + overlap_len
+
+        # Indices into REF (0-based)
+        ref_start_idx = overlap_start - var_start
+        ref_end_idx_excl = ref_start_idx + overlap_len
+
+        panel_sub = repeat_seq[rep_start_idx:rep_end_idx_excl]
+        ref_sub = ref_base[ref_start_idx:ref_end_idx_excl]
+
+        if panel_sub.upper() != ref_sub.upper():
+            logger.warning(
+                "Reference mismatch in STR overlap: VCF %s:%d %s>%s, "
+                "STR panel %s:%d-%d RU=%s\n"
+                "Panel overlap: %s\n"
+                "VCF REF overlap: %s",
+                record.contig,
+                record.pos,
+                record.alleles[0],
+                record.alleles[1],
+                str_row["CHROM"],
+                str_row["START"],
+                str_row["END"],
+                str_row["RU"],
+                panel_sub,
+                ref_sub,
+            )
 
     # Apply mutation to get alternate sequence
     mutated_seq = apply_variant_to_repeat(record.pos, ref_base, alt_base, repeat_start, repeat_seq)
 
     # Count repeat units
     ru = str_row["RU"]
-    ref_len = count_repeat_units(reference_seq, ru)
+    ref_len = count_repeat_units(repeat_seq, ru)
     alt_len = count_repeat_units(mutated_seq, ru)
-    perfect = is_perfect_repeat(reference_seq, ru) and is_perfect_repeat(mutated_seq, ru)
+    perfect = is_perfect_repeat(repeat_seq, ru) and is_perfect_repeat(mutated_seq, ru)
 
     # Prepare INFO fields - only copy safe, commonly used fields
     # to avoid type/Number mismatches with fields from original VCF
@@ -176,7 +211,7 @@ def build_new_record(
         start=repeat_start - 1,
         stop=str_row["END"],
         id=".",
-        alleles=(reference_seq, mutated_seq),
+        alleles=(repeat_seq, mutated_seq),
         info=info,
         filter=record.filter.keys(),
     )
