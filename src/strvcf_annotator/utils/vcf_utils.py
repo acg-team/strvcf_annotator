@@ -32,7 +32,10 @@ def chrom_to_order(chrom: str) -> int:
     # Anything else gets pushed to the end
     return 1_000_000
 
-def normalize_info_fields(record: pysam.VariantRecord, header: pysam.VariantHeader) -> Dict[str, Any]:
+
+def normalize_info_fields(
+    record: pysam.VariantRecord, header: pysam.VariantHeader
+) -> Dict[str, Any]:
     """Normalize INFO fields for proper VCF serialization.
 
     Handles various INFO field types and ensures they are properly formatted

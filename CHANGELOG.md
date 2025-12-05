@@ -13,6 +13,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add performance optimizations for large VCF files
 - Integrate with cloud storage (S3, GCS)
 
+## [0.2.2] - 2025-12-04
+- Change `apply_variant_to_repeat` function for applying VCF variants to STR panel sequences.
+  * Locally normalizes variants (`pos`, `ref`, `alt`) by trimming shared prefix/suffix before applying.
+  * Applies the full **ALT** if the normalized variant starts inside the STR; only clips when the variant starts before the STR and overlaps it.
+  * Handles REF/ALT in a **case-insensitive** way and matches the output case to the STR panel sequence.
+  * Includes unit tests for:
+    * variants overlapping STR boundaries,
+    * long homopolymer variants extending beyond the STR,
+    * lowercase REF/ALT vs uppercase/lowercase STR panel.
+- Filter records with same alt and ref (happens if mutation is not normalized and actually happens outside of STR region)
+
+
 ## [0.2.1] - 2025-11-26
 - Reformatted code for consistency and style.
 - Added tox-based test matrix and GitHub Actions CI.

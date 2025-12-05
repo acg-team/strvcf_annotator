@@ -1,6 +1,7 @@
 """Utilities for repeat sequence operations."""
 
-from typing import Dict, Union
+from typing import Dict, Tuple, Union
+
 import pandas as pd
 
 
@@ -122,63 +123,153 @@ def count_repeat_units(sequence: str, motif: str) -> int:
 
     return max_run
 
+
+def normalize_variant(pos: int, ref: str, alt: str) -> Tuple[int, str, str]:
+    """
+    Locally normalize (pos, ref, alt) by trimming shared prefix/suffix.
+
+    - pos is 1-based VCF coordinate.
+    - Trimming is case-insensitive.
+    - We always keep at least 1 base in ref and alt if they differ.
+
+    Returns
+    -------
+    new_pos, new_ref, new_alt
+    """
+    # early exit: identical → no-op
+    if ref.upper() == alt.upper():
+        return pos, ref, alt
+
+    r = ref
+    a = alt
+
+    # trim common prefix
+    while len(r) > 1 and len(a) > 1 and r[0].upper() == a[0].upper():
+        r = r[1:]
+        a = a[1:]
+        pos += 1
+
+    # trim common suffix
+    while len(r) > 1 and len(a) > 1 and r[-1].upper() == a[-1].upper():
+        r = r[:-1]
+        a = a[:-1]
+
+    return pos, r, a
+
+
 def apply_variant_to_repeat(
     pos: int, ref: str, alt: str, repeat_start: int, repeat_seq: str
 ) -> str:
-    """Apply variant to repeat sequence, handling edge cases.
+    """Apply a variant to the STR repeat sequence, with normalization.
 
-    Applies a variant (ref → alt) to the STR repeat sequence. Handles cases
-    where the variant starts before the repeat region by clipping the variant
-    appropriately.
+    1) Normalize (pos, ref, alt) by trimming shared prefix/suffix.
+    2) If the normalized variant lies fully inside the STR, apply the full ALT.
+    3) If it only partially overlaps, apply only the overlapping part:
+       - SNP-like (len(ref) == len(alt)): positional alignment.
+       - Indel-like (len(ref) != len(alt)): align overlapping part from the
+         end of ALT.
+
+    Conceptually, we assume the genomic reference at this locus looks like
+    `repeat_seq + UNKNOWN_SUFFIX`. Any differences outside the STR window
+    are ignored when computing the mutated STR.
+
+    Case handling
+    -------------
+    - Normalization and overlap logic are case-insensitive.
+    - The output casing follows the STR sequence at the overlapping segment:
+      * If the overlapping STR slice is all lowercase, ALT is lowercased.
+      * If it is all uppercase (typical), ALT is uppercased.
+      * Otherwise, ALT is used as-is.
 
     Parameters
     ----------
     pos : int
-        Variant position (1-based VCF coordinate)
+        Variant position (1-based VCF coordinate).
     ref : str
-        Reference allele sequence
+        Reference allele from VCF.
     alt : str
-        Alternate allele sequence
+        Alternate allele from VCF.
     repeat_start : int
-        Start position of repeat region (1-based)
+        Start position of repeat region (1-based).
     repeat_seq : str
-        Full repeat sequence
+        Reference STR sequence (panel).
 
     Returns
     -------
     str
-        Mutated repeat sequence after applying the variant
-
-    Examples
-    --------
-    >>> apply_variant_to_repeat(100, 'A', 'T', 100, 'AAAA')
-    'TAAA'
-    >>> apply_variant_to_repeat(100, 'AA', 'A', 100, 'AAAA')
-    'AAA'
-
-    Notes
-    -----
-    - Handles variants that start before the repeat region by clipping
-    - Handles variants that extend beyond the repeat region
-    - Preserves sequence integrity for complex indels
+        Mutated repeat sequence after applying the normalized variant
+        restricted to the STR window. If there is no overlap, returns
+        repeat_seq unchanged.
     """
-    relative_pos = pos - repeat_start
+    repeat_len = len(repeat_seq)
 
-    # Variant starts before the STR
-    if relative_pos < 0:
-        # Clip how much of the REF applies before the STR
-        ref_clip = -relative_pos
-        ref = ref[ref_clip:]  # Remove the part before STR
-        alt = alt[ref_clip:]  # Same for ALT
-        relative_pos = 0  # Mutation starts at beginning of repeat_seq
+    # --- 1) Normalize variant locally ---
+    pos, ref, alt = normalize_variant(pos, ref, alt)
 
-    # Apply mutation safely inside repeat_seq
+    # After normalization, if ref == alt, nothing to do for the STR
+    if ref.upper() == alt.upper():
+        return repeat_seq
+
+    repeat_end = repeat_start + repeat_len - 1
+    var_start = pos
+    var_end = pos + len(ref) - 1  # inclusive
+
+    # --- 2) No overlap with STR ---
+    if var_end < repeat_start or var_start > repeat_end:
+        return repeat_seq
+
+    # --- 3) Variant fully inside STR: apply full ALT (insertions/deletions kept) ---
+    if var_start >= repeat_start and var_end <= repeat_end:
+        relative_pos = var_start - repeat_start  # 0-based offset within repeat_seq
+        before = repeat_seq[:relative_pos]
+        after = repeat_seq[relative_pos + len(ref) :]
+
+        panel_slice = repeat_seq[relative_pos : relative_pos + len(ref)]
+
+        # Case-normalize ALT to match panel_slice
+        alt_adj = alt
+        if panel_slice.islower():
+            alt_adj = alt.lower()
+        elif panel_slice.isupper():
+            alt_adj = alt.upper()
+
+        return before + alt_adj + after
+
+    # --- 4) Partial overlap with STR (starts before and/or ends after) ---
+    # Compute overlap region in reference coordinates.
+    overlap_start = max(repeat_start, var_start)
+    overlap_end = min(repeat_end, var_end)
+    overlap_len = overlap_end - overlap_start + 1
+    # Position inside the STR where overlap begins (0-based)
+    relative_pos = overlap_start - repeat_start
+
+    # Extract ALT substring corresponding to overlapping bases.
+    if len(ref) == len(alt):
+        # SNP-like: align by position (same offset as ref)
+        i0 = overlap_start - var_start
+        alt_overlap_raw = alt[i0 : i0 + overlap_len]
+    else:
+        # Indel-like: align from the end of ALT so that the last base of ALT
+        # corresponds to the last overlapping base of REF.
+
+        # ALT shorter or equal: use entire ALT
+        # Use only the suffix of ALT that covers the overlapping segment
+        alt_overlap_raw = alt if overlap_len >= len(alt) else alt[-overlap_len:]
+
+    panel_slice = repeat_seq[relative_pos : relative_pos + overlap_len]
+
+    # Case-normalize ALT overlap to match panel_slice
+    if panel_slice.islower():
+        alt_overlap = alt_overlap_raw.lower()
+    elif panel_slice.isupper():
+        alt_overlap = alt_overlap_raw.upper()
+    else:
+        alt_overlap = alt_overlap_raw
+
     before_mut = repeat_seq[:relative_pos]
-    after_mut = (
-        repeat_seq[relative_pos + len(ref) :] if relative_pos + len(ref) <= len(repeat_seq) else ""
-    )
+    after_mut = repeat_seq[relative_pos + overlap_len :]
 
-    mutated = before_mut + alt + after_mut
+    mutated = before_mut + alt_overlap + after_mut
     return mutated
 
 

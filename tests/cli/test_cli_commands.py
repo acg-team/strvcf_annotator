@@ -1,11 +1,11 @@
 """Tests for CLI commands using subprocess."""
 
-import pytest
-import subprocess
 import os
-import tempfile
 import shutil
-from pathlib import Path
+import subprocess
+import tempfile
+
+import pytest
 
 
 @pytest.fixture
@@ -35,11 +35,7 @@ class TestCLIBasicUsage:
 
     def test_help_command(self):
         """Test --help flag."""
-        result = subprocess.run(
-            ["strvcf-annotator", "--help"],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["strvcf-annotator", "--help"], capture_output=True, text=True)
         assert result.returncode == 0
         assert "Annotate STR regions in VCF files" in result.stdout
         assert "--input" in result.stdout
@@ -48,21 +44,13 @@ class TestCLIBasicUsage:
 
     def test_version_command(self):
         """Test --version flag."""
-        result = subprocess.run(
-            ["strvcf-annotator", "--version"],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["strvcf-annotator", "--version"], capture_output=True, text=True)
         assert result.returncode == 0
-        assert "0.2.1" in result.stdout
+        assert "0.2.2" in result.stdout
 
     def test_no_arguments_fails(self):
         """Test that running without arguments fails."""
-        result = subprocess.run(
-            ["strvcf-annotator"],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["strvcf-annotator"], capture_output=True, text=True)
         assert result.returncode != 0
         assert "required" in result.stderr.lower() or "error" in result.stderr.lower()
 
@@ -77,13 +65,16 @@ class TestCLISingleFileMode:
         result = subprocess.run(
             [
                 "strvcf-annotator",
-                "--input", sample_vcf,
-                "--str-bed", sample_bed,
-                "--output", output_vcf
+                "--input",
+                sample_vcf,
+                "--str-bed",
+                sample_bed,
+                "--output",
+                output_vcf,
             ],
             capture_output=True,
             text=True,
-            timeout=300  # 5 minutes timeout
+            timeout=300,  # 5 minutes timeout
         )
 
         # Check return code
@@ -102,14 +93,17 @@ class TestCLISingleFileMode:
         result = subprocess.run(
             [
                 "strvcf-annotator",
-                "--input", sample_vcf,
-                "--str-bed", sample_bed,
-                "--output", output_vcf,
-                "--verbose"
+                "--input",
+                sample_vcf,
+                "--str-bed",
+                sample_bed,
+                "--output",
+                output_vcf,
+                "--verbose",
             ],
             capture_output=True,
             text=True,
-            timeout=300
+            timeout=300,
         )
 
         assert result.returncode == 0
@@ -123,12 +117,15 @@ class TestCLISingleFileMode:
         result = subprocess.run(
             [
                 "strvcf-annotator",
-                "--input", "/nonexistent/file.vcf",
-                "--str-bed", sample_bed,
-                "--output", output_vcf
+                "--input",
+                "/nonexistent/file.vcf",
+                "--str-bed",
+                sample_bed,
+                "--output",
+                output_vcf,
             ],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         assert result.returncode != 0
@@ -142,12 +139,15 @@ class TestCLISingleFileMode:
         result = subprocess.run(
             [
                 "strvcf-annotator",
-                "--input", sample_vcf,
-                "--str-bed", "/nonexistent/file.bed",
-                "--output", output_vcf
+                "--input",
+                sample_vcf,
+                "--str-bed",
+                "/nonexistent/file.bed",
+                "--output",
+                output_vcf,
             ],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         assert result.returncode != 0
@@ -157,12 +157,15 @@ class TestCLISingleFileMode:
         result = subprocess.run(
             [
                 "strvcf-annotator",
-                "--input", sample_vcf,
-                "--str-bed", sample_bed,
-                "--output", "/nonexistent/directory/output.vcf"
+                "--input",
+                sample_vcf,
+                "--str-bed",
+                sample_bed,
+                "--output",
+                "/nonexistent/directory/output.vcf",
             ],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         assert result.returncode != 0
@@ -183,13 +186,16 @@ class TestCLIBatchMode:
             result = subprocess.run(
                 [
                     "strvcf-annotator",
-                    "--input-dir", temp_input_dir,
-                    "--str-bed", sample_bed,
-                    "--output-dir", temp_output_dir
+                    "--input-dir",
+                    temp_input_dir,
+                    "--str-bed",
+                    sample_bed,
+                    "--output-dir",
+                    temp_output_dir,
                 ],
                 capture_output=True,
                 text=True,
-                timeout=300
+                timeout=300,
             )
 
             assert result.returncode == 0, f"STDOUT: {result.stdout}\nSTDERR: {result.stderr}"
@@ -219,13 +225,16 @@ class TestCLIBatchMode:
             result = subprocess.run(
                 [
                     "strvcf-annotator",
-                    "--input-dir", temp_input_dir,
-                    "--str-bed", sample_bed,
-                    "--output-dir", temp_output_dir
+                    "--input-dir",
+                    temp_input_dir,
+                    "--str-bed",
+                    sample_bed,
+                    "--output-dir",
+                    temp_output_dir,
                 ],
                 capture_output=True,
                 text=True,
-                timeout=300
+                timeout=300,
             )
 
             assert result.returncode == 0
@@ -245,12 +254,15 @@ class TestCLIBatchMode:
             result = subprocess.run(
                 [
                     "strvcf-annotator",
-                    "--input-dir", temp_input_dir,
-                    "--str-bed", sample_bed,
-                    "--output-dir", temp_output_dir
+                    "--input-dir",
+                    temp_input_dir,
+                    "--str-bed",
+                    sample_bed,
+                    "--output-dir",
+                    temp_output_dir,
                 ],
                 capture_output=True,
-                text=True
+                text=True,
             )
 
             # Should succeed but with no output files
@@ -271,13 +283,9 @@ class TestCLIArgumentValidation:
     def test_input_without_output(self, sample_vcf, sample_bed):
         """Test that --input without --output fails."""
         result = subprocess.run(
-            [
-                "strvcf-annotator",
-                "--input", sample_vcf,
-                "--str-bed", sample_bed
-            ],
+            ["strvcf-annotator", "--input", sample_vcf, "--str-bed", sample_bed],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         assert result.returncode != 0
@@ -285,13 +293,9 @@ class TestCLIArgumentValidation:
     def test_input_dir_without_output_dir(self, sample_bed, temp_output_dir):
         """Test that --input-dir without --output-dir fails."""
         result = subprocess.run(
-            [
-                "strvcf-annotator",
-                "--input-dir", temp_output_dir,
-                "--str-bed", sample_bed
-            ],
+            ["strvcf-annotator", "--input-dir", temp_output_dir, "--str-bed", sample_bed],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         assert result.returncode != 0
@@ -301,13 +305,9 @@ class TestCLIArgumentValidation:
         output_vcf = os.path.join(temp_output_dir, "out.vcf")
 
         result = subprocess.run(
-            [
-                "strvcf-annotator",
-                "--str-bed", sample_bed,
-                "--output", output_vcf
-            ],
+            ["strvcf-annotator", "--str-bed", sample_bed, "--output", output_vcf],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         assert result.returncode != 0
@@ -317,12 +317,15 @@ class TestCLIArgumentValidation:
         result = subprocess.run(
             [
                 "strvcf-annotator",
-                "--input", sample_vcf,
-                "--str-bed", sample_bed,
-                "--output-dir", temp_output_dir
+                "--input",
+                sample_vcf,
+                "--str-bed",
+                sample_bed,
+                "--output-dir",
+                temp_output_dir,
             ],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         # Should fail due to argument validation
@@ -333,13 +336,9 @@ class TestCLIArgumentValidation:
         output_vcf = os.path.join(temp_output_dir, "out.vcf")
 
         result = subprocess.run(
-            [
-                "strvcf-annotator",
-                "--input", sample_vcf,
-                "--output", output_vcf
-            ],
+            ["strvcf-annotator", "--input", sample_vcf, "--output", output_vcf],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         assert result.returncode != 0
@@ -356,19 +355,22 @@ class TestCLIOutputValidation:
         result = subprocess.run(
             [
                 "strvcf-annotator",
-                "--input", sample_vcf,
-                "--str-bed", sample_bed,
-                "--output", output_vcf
+                "--input",
+                sample_vcf,
+                "--str-bed",
+                sample_bed,
+                "--output",
+                output_vcf,
             ],
             capture_output=True,
             text=True,
-            timeout=300
+            timeout=300,
         )
 
         assert result.returncode == 0
 
         # Read output file and check for STR fields
-        with open(output_vcf, 'r') as f:
+        with open(output_vcf) as f:
             content = f.read()
             # Check header contains STR INFO fields
             assert "##INFO=<ID=RU" in content
@@ -385,19 +387,22 @@ class TestCLIOutputValidation:
         result = subprocess.run(
             [
                 "strvcf-annotator",
-                "--input", sample_vcf,
-                "--str-bed", sample_bed,
-                "--output", output_vcf
+                "--input",
+                sample_vcf,
+                "--str-bed",
+                sample_bed,
+                "--output",
+                output_vcf,
             ],
             capture_output=True,
             text=True,
-            timeout=300
+            timeout=300,
         )
 
         assert result.returncode == 0
 
         # Basic VCF format validation
-        with open(output_vcf, 'r') as f:
+        with open(output_vcf) as f:
             lines = f.readlines()
             # Should have header lines
             assert any(line.startswith("##fileformat=VCF") for line in lines)
@@ -410,10 +415,7 @@ class TestCLIEdgeCases:
 
     def test_compressed_vcf_input(self, data_dir, sample_bed, temp_output_dir):
         """Test handling of compressed VCF input."""
-        compressed_vcf = os.path.join(
-            data_dir,
-            "test.vcf.gz"
-        )
+        compressed_vcf = os.path.join(data_dir, "test.vcf.gz")
 
         if not os.path.exists(compressed_vcf):
             pytest.skip("Compressed VCF file not available")
@@ -423,13 +425,16 @@ class TestCLIEdgeCases:
         result = subprocess.run(
             [
                 "strvcf-annotator",
-                "--input", compressed_vcf,
-                "--str-bed", sample_bed,
-                "--output", output_vcf
+                "--input",
+                compressed_vcf,
+                "--str-bed",
+                sample_bed,
+                "--output",
+                output_vcf,
             ],
             capture_output=True,
             text=True,
-            timeout=300
+            timeout=300,
         )
 
         # Should handle compressed files
@@ -438,8 +443,8 @@ class TestCLIEdgeCases:
     def test_relative_paths(self, temp_output_dir):
         """Test that relative paths work correctly."""
         # Create temporary files in current directory
-        temp_vcf = tempfile.NamedTemporaryFile(mode='w', suffix='.vcf', delete=False)
-        temp_bed = tempfile.NamedTemporaryFile(mode='w', suffix='.bed', delete=False)
+        temp_vcf = tempfile.NamedTemporaryFile(mode="w", suffix=".vcf", delete=False)
+        temp_bed = tempfile.NamedTemporaryFile(mode="w", suffix=".bed", delete=False)
 
         try:
             # Write minimal VCF
@@ -456,17 +461,24 @@ class TestCLIEdgeCases:
             result = subprocess.run(
                 [
                     "strvcf-annotator",
-                    "--input", temp_vcf.name,
-                    "--str-bed", temp_bed.name,
-                    "--output", output_vcf
+                    "--input",
+                    temp_vcf.name,
+                    "--str-bed",
+                    temp_bed.name,
+                    "--output",
+                    output_vcf,
                 ],
                 capture_output=True,
-                text=True
+                text=True,
             )
 
             # Relative paths should work
             # (may fail due to empty VCF, but path resolution should work)
-            assert result.returncode == 0 or "empty" in result.stderr.lower() or "no" in result.stderr.lower()
+            assert (
+                result.returncode == 0
+                or "empty" in result.stderr.lower()
+                or "no" in result.stderr.lower()
+            )
 
         finally:
             os.unlink(temp_vcf.name)
