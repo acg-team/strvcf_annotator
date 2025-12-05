@@ -164,7 +164,10 @@ def apply_variant_to_repeat(
 
     1) Normalize (pos, ref, alt) by trimming shared prefix/suffix.
     2) If the normalized variant lies fully inside the STR, apply the full ALT.
-    3) If it only partially overlaps, apply only the overlapping part.
+    3) If it only partially overlaps, apply only the overlapping part:
+       - SNP-like (len(ref) == len(alt)): positional alignment.
+       - Indel-like (len(ref) != len(alt)): align overlapping part from the
+         end of ALT.
 
     Conceptually, we assume the genomic reference at this locus looks like
     `repeat_seq + UNKNOWN_SUFFIX`. Any differences outside the STR window
@@ -232,30 +235,26 @@ def apply_variant_to_repeat(
 
         return before + alt_adj + after
 
-    # --- 4) Partial overlap with STR (starts before and/or extends beyond) ---
-    # Here we only apply the overlapping part.
+    # --- 4) Partial overlap with STR (starts before and/or ends after) ---
+    # Compute overlap region in reference coordinates.
+    overlap_start = max(repeat_start, var_start)
+    overlap_end = min(repeat_end, var_end)
+    overlap_len = overlap_end - overlap_start + 1
+    # Position inside the STR where overlap begins (0-based)
+    relative_pos = overlap_start - repeat_start
 
-    # 0-based offset relative to repeat_start (can be negative)
-    relative_pos = var_start - repeat_start
+    # Extract ALT substring corresponding to overlapping bases.
+    if len(ref) == len(alt):
+        # SNP-like: align by position (same offset as ref)
+        i0 = overlap_start - var_start
+        alt_overlap_raw = alt[i0 : i0 + overlap_len]
+    else:
+        # Indel-like: align from the end of ALT so that the last base of ALT
+        # corresponds to the last overlapping base of REF.
 
-    # Clip leading part if variant starts before STR
-    if relative_pos < 0:
-        clip = -relative_pos
-        if clip >= len(ref):
-            # Variant entirely before STR (defensive)
-            return repeat_seq
-        ref = ref[clip:]
-        var_start += clip
-        relative_pos = 0
-
-    # Now variant starts inside STR (0 <= relative_pos < repeat_len)
-    max_overlap = repeat_len - relative_pos
-    overlap_len = min(len(ref), max_overlap)
-
-    if overlap_len <= 0:
-        return repeat_seq
-
-    alt_overlap_raw = alt[:overlap_len]
+        # ALT shorter or equal: use entire ALT
+        # Use only the suffix of ALT that covers the overlapping segment
+        alt_overlap_raw = alt if overlap_len >= len(alt) else alt[-overlap_len:]
 
     panel_slice = repeat_seq[relative_pos : relative_pos + overlap_len]
 

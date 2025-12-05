@@ -9,13 +9,6 @@ STR (Short Tandem Repeat) annotation tool for VCF files.
 variants in VCF files that overlap short tandem repeat (STR) regions. 
 The tool converts SNPs, SNVs and indels into full repeat sequences and adds STR metadata.
 
-Features
---------
-
-* **Dual Usage**: Works as both a library and CLI tool
-* **Extensible**: Easy to add custom parsers for different VCF formats
-* **Efficient**: Streaming support for large files
-
 Installation
 ------------
 Package is available through `PyPI <https://pypi.org/project/strvcf-annotator/>`_. To install, type:
@@ -135,27 +128,6 @@ Example
     #CHROM  POS  ID  REF         ALT             QUAL  FILTER  INFO                              FORMAT      Sample1
     chr1    101  .   CAGCAGCAG   CAGCAGCAGCAG    .     .       RU=CAG;PERIOD=3;REF=3;PERFECT=TRUE  GT:REPCN    0/1:3,4
 
-Architecture
-------------
-
-.. code-block::
-
-    src/strvcf_annotator/
-    ├── __init__.py          # Public API
-    ├── api.py               # Library API
-    ├── cli.py               # CLI interface
-    ├── core/                # Core functionality
-    │   ├── annotation.py    # Annotation engine
-    │   ├── vcf_processor.py # VCF processing
-    │   ├── str_reference.py # STR reference management
-    │   └── repeat_utils.py  # Repeat sequence utilities
-    ├── parsers/             # Parser system
-    │   ├── base.py          # Abstract parser interface
-    │   └── generic.py       # Generic VCF parser
-    └── utils/               # Utilities
-        ├── vcf_utils.py     # VCF helpers
-        └── validation.py    # Input validation
-
 Extending functionality
 -----------------------
 
@@ -185,12 +157,6 @@ Creating a custom parser
 
     # Usage
     annotator = STRAnnotator('repeats.bed', parser=CustomParser())
-
-Performance
------------
-- **Streaming processing**: Does not load the entire VCF into memory
-- **Efficient lookup**: Uses sorted data for fast STR searches
-- **Batch processing**: Supports processing multiple files
 
 Troubleshooting
 ---------------

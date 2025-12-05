@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     * variants overlapping STR boundaries,
     * long homopolymer variants extending beyond the STR,
     * lowercase REF/ALT vs uppercase/lowercase STR panel.
-- Filter records with same alt and ref (happens if mutation is not normalized and actuually happens outside of STR region)
+- Filter records with same alt and ref (happens if mutation is not normalized and actually happens outside of STR region)
 
 
 ## [0.2.1] - 2025-11-26

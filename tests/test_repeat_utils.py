@@ -321,6 +321,20 @@ class TestApplyVariantToRepeat:
         )
         assert mutated == "AAAAAAAAAAAAA"
 
+    def test_overlap_snp(self):
+        pos = 98
+        ref = "CCA"
+        alt = "TGG"
+        repeat_start = 100
+        mutated = apply_variant_to_repeat(
+            pos=pos,
+            ref=ref,
+            alt=alt,
+            repeat_start=repeat_start,
+            repeat_seq="AA",
+        )
+        assert mutated == "GA"
+
 class TestIsPerfectRepeat:
     """Test suite for is_perfect_repeat."""
 
