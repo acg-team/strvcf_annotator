@@ -1,6 +1,7 @@
 """Utilities for repeat sequence operations."""
 
-from typing import Dict, Union
+from typing import Dict, Tuple, Union
+
 import pandas as pd
 
 
@@ -122,7 +123,8 @@ def count_repeat_units(sequence: str, motif: str) -> int:
 
     return max_run
 
-def normalize_variant(pos: int, ref: str, alt: str) -> tuple[int, str, str]:
+
+def normalize_variant(pos: int, ref: str, alt: str) -> Tuple[int, str, str]:
     """
     Locally normalize (pos, ref, alt) by trimming shared prefix/suffix.
 
@@ -154,20 +156,6 @@ def normalize_variant(pos: int, ref: str, alt: str) -> tuple[int, str, str]:
 
     return pos, r, a
 
-def is_motif_continuation(seq: str, motif: str) -> bool:
-    """
-    Return True if `seq` looks like a continuation of `motif`,
-    i.e. every position matches motif repeated (case-insensitive).
-
-    Used to detect if the REF suggests that the repeat runs beyond
-    the panel boundaries.
-    """
-    if not seq:
-        return False
-    m = len(motif)
-    motif_u = motif.upper()
-    seq_u = seq.upper()
-    return all(base == motif_u[i % m] for i, base in enumerate(seq_u))
 
 def apply_variant_to_repeat(
     pos: int, ref: str, alt: str, repeat_start: int, repeat_seq: str
@@ -284,8 +272,6 @@ def apply_variant_to_repeat(
 
     mutated = before_mut + alt_overlap + after_mut
     return mutated
-
-
 
 
 def is_perfect_repeat(sequence: str, motif: str) -> bool:

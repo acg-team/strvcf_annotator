@@ -1,5 +1,6 @@
 """Core annotation engine for building STR-annotated VCF records."""
 
+import contextlib
 import logging
 from typing import Dict, Union
 
@@ -12,7 +13,6 @@ from .repeat_utils import (
     count_repeat_units,
     extract_repeat_sequence,
     is_perfect_repeat,
-    is_motif_continuation
 )
 
 logger = logging.getLogger(__name__)
@@ -56,11 +56,10 @@ def make_modified_header(vcf_in: pysam.VariantFile) -> pysam.VariantHeader:
             continue
         if rec.key == "FORMAT" and rec["ID"] in format_to_replace:
             continue
-        try:
+
+        # Fallback: skip unrecognized or malformed lines
+        with contextlib.suppress(Exception):
             new_header.add_record(rec)
-        except Exception:
-            # Fallback: skip unrecognized or malformed lines
-            pass
 
     # Copy contigs explicitly
     for contig in vcf_in.header.contigs.values():
@@ -189,11 +188,9 @@ def build_new_record(
 
     for field in safe_info_fields:
         if field in record.info:
-            try:
+            # Skip fields that can't be copied
+            with contextlib.suppress(TypeError, ValueError, KeyError):
                 info[field] = record.info[field]
-            except (TypeError, ValueError, KeyError):
-                # Skip fields that can't be copied
-                pass
 
     # Add our STR-specific INFO fields
     info.update(
@@ -224,11 +221,9 @@ def build_new_record(
 
         for field_name in old_sample:
             if field_name not in ["GT", "REPCN"]:
-                try:
+                with contextlib.suppress(TypeError, ValueError):
                     new_sample[field_name] = old_sample[field_name]
-                except (TypeError, ValueError):
                     # Skip fields that can't be copied (e.g., incompatible types)
-                    pass
 
         # Get genotype using parser and set GT + REPCN
         sample_idx = list(record.samples.keys()).index(sample_name)
@@ -284,7 +279,4 @@ def should_skip_genotype(record: pysam.VariantRecord, parser: BaseVCFParser) -> 
         return True
 
     # Skip if both samples have identical genotypes
-    if gt_0 == gt_1:
-        return True
-
-    return False
+    return gt_0 == gt_1

@@ -86,7 +86,7 @@ def generate_annotated_records(
     vcf_in: pysam.VariantFile,
     str_df: pd.DataFrame,
     parser: BaseVCFParser = None,
-    somatic_mode: bool = False
+    somatic_mode: bool = False,
 ) -> Iterator[pysam.VariantRecord]:
     """Generator yielding annotated VCF records.
 
@@ -138,8 +138,10 @@ def generate_annotated_records(
     for record in records:
         # Advance STR index to current chromosome/position
         while str_idx < len(str_list) and (
-            str_list[str_idx]['CHROM'] != record.chrom or
-            (str_list[str_idx]['CHROM'] == record.chrom and str_list[str_idx]['END'] < record.pos)
+            str_list[str_idx]["CHROM"] != record.chrom
+            or (
+                str_list[str_idx]["CHROM"] == record.chrom and str_list[str_idx]["END"] < record.pos
+            )
         ):
             str_idx += 1
 
@@ -149,7 +151,11 @@ def generate_annotated_records(
         str_row = str_list[str_idx]
 
         # Check for overlap - variant position should be within STR region
-        if str_row['CHROM'] != record.chrom or record.pos < str_row['START'] or record.pos > str_row['END']:
+        if (
+            str_row["CHROM"] != record.chrom
+            or record.pos < str_row["START"]
+            or record.pos > str_row["END"]
+        ):
             continue  # No overlap
 
         # Skip based on genotype filtering (only if somatic_mode enabled)
@@ -182,7 +188,7 @@ def annotate_vcf_to_file(
     str_df: pd.DataFrame,
     output_path: str,
     parser: BaseVCFParser = None,
-    somatic_mode: bool = False
+    somatic_mode: bool = False,
 ) -> None:
     """Process VCF file and write annotated output.
 
@@ -211,7 +217,7 @@ def annotate_vcf_to_file(
 
     vcf_in = pysam.VariantFile(vcf_path)
     new_header = make_modified_header(vcf_in)
-    vcf_out = pysam.VariantFile(output_path, 'w', header=new_header)
+    vcf_out = pysam.VariantFile(output_path, "w", header=new_header)
 
     # Process and write records
     written_count = 0
@@ -230,7 +236,7 @@ def process_directory(
     str_bed_path: str,
     output_dir: str,
     parser: BaseVCFParser = None,
-    somatic_mode: bool = False
+    somatic_mode: bool = False,
 ) -> None:
     """Batch process directory of VCF files.
 
@@ -263,11 +269,11 @@ def process_directory(
 
     # Process each VCF file
     input_path = Path(input_dir)
-    for vcf_file in input_path.glob('*.vcf*'):
-        if vcf_file.suffix in ['.vcf', '.gz']:
+    for vcf_file in input_path.glob("*.vcf*"):
+        if vcf_file.suffix in [".vcf", ".gz"]:
             # Generate output filename
             base_name = vcf_file.stem
-            if base_name.endswith('.vcf'):
+            if base_name.endswith(".vcf"):
                 base_name = base_name[:-4]
             output_file = Path(output_dir) / f"{base_name}.annotated.vcf"
 
@@ -278,10 +284,6 @@ def process_directory(
 
             logger.info(f"Processing {vcf_file.name}...")
             annotate_vcf_to_file(
-                str(vcf_file),
-                str_df,
-                str(output_file),
-                parser,
-                somatic_mode=somatic_mode
+                str(vcf_file), str_df, str(output_file), parser, somatic_mode=somatic_mode
             )
             logger.info(f" → Output: {output_file}")

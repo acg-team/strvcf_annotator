@@ -36,21 +36,21 @@ def load_str_reference(str_path: str) -> pd.DataFrame:
     This function converts START positions by adding 1. END positions are kept
     as-is since BED END is exclusive and VCF END is inclusive.
     """
-    df = pd.read_csv(str_path, sep='\t', header=None)
-    df.columns = ['CHROM', 'START', 'END', 'PERIOD', 'RU']
+    df = pd.read_csv(str_path, sep="\t", header=None)
+    df.columns = ["CHROM", "START", "END", "PERIOD", "RU"]
 
     # Convert from 0-based BED to 1-based VCF coordinates
-    df['START'] = df['START'] + 1
+    df["START"] = df["START"] + 1
 
     # Calculate number of repeat units
-    df['COUNT'] = (df['END'] - df['START'] + 1) / df['PERIOD']
+    df["COUNT"] = (df["END"] - df["START"] + 1) / df["PERIOD"]
 
     # Add chromosome order column for proper sorting
-    df['CHROM_ORDER'] = df['CHROM'].apply(chrom_to_order)
+    df["CHROM_ORDER"] = df["CHROM"].apply(chrom_to_order)
 
     # Sort by chromosome (natural order) and position for efficient lookups
-    df.sort_values(by=['CHROM_ORDER', 'START'], inplace=True)
-    df.drop(columns='CHROM_ORDER', inplace=True)
+    df.sort_values(by=["CHROM_ORDER", "START"], inplace=True)
+    df.drop(columns="CHROM_ORDER", inplace=True)
     return df
 
 
@@ -78,16 +78,14 @@ def find_overlapping_str(str_df: pd.DataFrame, chrom: str, pos: int, end: int) -
         Contains keys: CHROM, START, END, PERIOD, RU, COUNT
     """
     # Filter by chromosome
-    chrom_df = str_df[str_df['CHROM'] == chrom]
+    chrom_df = str_df[str_df["CHROM"] == chrom]
 
     if chrom_df.empty:
         return None
 
     # Find overlapping regions
     # Overlap occurs when: variant_end >= str_start AND variant_start <= str_end
-    overlapping = chrom_df[
-        (chrom_df['START'] <= end) & (chrom_df['END'] >= pos)
-    ]
+    overlapping = chrom_df[(chrom_df["START"] <= end) & (chrom_df["END"] >= pos)]
 
     if overlapping.empty:
         return None
