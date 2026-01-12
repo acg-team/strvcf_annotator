@@ -9,6 +9,9 @@ strvcf_annotator
    :target: https://github.com/acg-team/strvcf_annotator/actions/workflows/ci.yml
    :alt: Tests
 
+.. image:: https://codecov.io/gh/acg-team/strvcf_annotator/branch/main/graph/badge.svg
+   :target: https://codecov.io/gh/acg-team/strvcf_annotator
+   :alt: Coverage
 
 STR (Short Tandem Repeat) annotation tool for VCF files.
 
