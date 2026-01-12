@@ -206,19 +206,24 @@ def build_new_record(
                         panel_sub,
                         ref_sub,
                     )
-                if mismatch_truth == "skip" and raw_mismatch and not suppress:
+                if mismatch_truth == "skip":
                     # Skip this record due to mismatch
                     if not ignore_mismatch_warnings:
                         logger.warning("Skipping record...")
                     return None
 
-            # If user says VCF is truth, patch the panel repeat sequence overlap to match VCF REF
-            # (only when overlap exists; if no overlap, nothing to patch)
-            if mismatch_truth == "vcf":
-                # Patch even if canonical-equivalent; "vcf truth" means the literal bases matter.
-                before = repeat_seq[:rep_start_idx]
-                after = repeat_seq[rep_end_idx_excl:]
-                repeat_seq = (before + ref_sub + after).upper()
+                # If user says VCF is truth, patch the panel repeat sequence overlap to match VCF REF
+                # (only when overlap exists; if no overlap, nothing to patch)
+                if mismatch_truth == "vcf":
+                    # Patch even if canonical-equivalent; "vcf truth" means the literal bases matter.
+                    if not ignore_mismatch_warnings:
+                        logger.warning("Use VCF as ground truth...")
+                    before = repeat_seq[:rep_start_idx]
+                    after = repeat_seq[rep_end_idx_excl:]
+                    repeat_seq = (before + ref_sub + after).upper()
+                else:
+                    if not ignore_mismatch_warnings:
+                        logger.warning("Use STR panel as ground truth...")
 
     alt_base = (record.alts[0] if record.alts else record.ref)
     # Apply the variant to the STR sequence

@@ -170,23 +170,13 @@ def main():
         if args.input:
             # Single file mode
             logger.info(f"Processing single file: {args.input}")
-            annotator.annotate_vcf_file(
-                args.input,
-                args.output,
-                ignore_mismatch_warnings=args.ignore_mismatch_warnings,
-                mismatch_truth=args.mismatch_truth,
-            )
+            annotator.annotate_vcf_file(args.input, args.output)
             logger.info(f"Successfully wrote annotated VCF to {args.output}")
 
         elif args.input_dir:
             # Batch directory mode
             logger.info(f"Processing directory: {args.input_dir}")
-            annotator.process_directory(
-                args.input_dir,
-                args.output_dir,
-                ignore_mismatch_warnings=args.ignore_mismatch_warnings,
-                mismatch_truth=args.mismatch_truth,
-            )
+            annotator.process_directory(args.input_dir, args.output_dir)
             logger.info(f"Successfully processed all VCF files to {args.output_dir}")
 
         logger.info("Annotation complete!")

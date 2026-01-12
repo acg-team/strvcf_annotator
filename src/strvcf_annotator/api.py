@@ -29,17 +29,25 @@ class STRAnnotator:
     parser : BaseVCFParser, optional
         Custom parser for genotype extraction. Uses GenericParser if None.
     somatic_mode : bool, optional
-        Enable somatic filtering. When True, skips variants where both samples
-        have identical genotypes. Default is False.
+        Enable somatic filtering. When ``True``, variants where all samples
+        have identical genotypes are skipped. If ``None``, the value set on
+        the annotator instance is used.
     ignore_mismatch_warnings : bool, optional
-        If True, suppresses warnings about reference mismatches between the
-        STR panel and VCF REF alleles. Default is False.
+        If ``True``, suppress warnings about reference mismatches between
+        the STR panel sequence and the VCF ``REF`` allele. If ``None``,
+        the value set on the annotator instance is used.
     mismatch_truth : str, optional
-            Specifies which source to consider as ground truth for mismatches.
-            Options are "panel", "vcf", or "skip". Default is "panel".
-                - "panel": trust panel repeat sequence (default behavior)
-                - "vcf": trust VCF REF. patch the panel repeat sequence overlap to match VCF REF
-                - "skip": skip record with mismatch
+        Specifies which source is treated as ground truth when a mismatch
+        between the STR panel and VCF ``REF`` allele is detected.
+
+        Allowed values are:
+
+        - ``"panel"``: trust the STR panel repeat sequence (default)
+        - ``"vcf"``: trust the VCF ``REF`` allele and patch the overlapping
+        panel sequence
+        - ``"skip"``: skip variants with mismatches entirely
+
+        If ``None``, the value set on the annotator instance is used.
 
     Attributes
     ----------
