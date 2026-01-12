@@ -95,7 +95,7 @@ def build_new_record(
     parser: BaseVCFParser,
     ignore_mismatch_warnings: bool = False,
     mismatch_truth: str = "panel",  # "panel" | "vcf" | "skip"
-) -> pysam.VariantRecord | None:
+) -> Union[pysam.VariantRecord, None]:
     """Build annotated VCF record with STR alleles and metadata.
 
     Constructs a new VCF record where alleles represent full repeat sequences
