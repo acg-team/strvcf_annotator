@@ -12,3 +12,4 @@ docs/build
 .tox
 dist
 log*
+coverage.xml

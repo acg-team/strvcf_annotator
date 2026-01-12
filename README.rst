@@ -2,6 +2,13 @@
 strvcf_annotator
 ================
 
+.. image:: https://img.shields.io/badge/docs-GitHub%20Pages-blue
+   :target: https://acg-team.github.io/strvcf_annotator/
+
+.. image:: https://github.com/acg-team/strvcf_annotator/actions/workflows/ci.yml/badge.svg
+   :target: https://github.com/acg-team/strvcf_annotator/actions/workflows/ci.yml
+   :alt: Tests
+
 
 STR (Short Tandem Repeat) annotation tool for VCF files.
 
@@ -156,6 +163,13 @@ Creating a custom parser
 
     # Usage
     annotator = STRAnnotator('repeats.bed', parser=CustomParser())
+
+Documentation
+-------------
+
+Full documentation is available at:
+
+https://acg-team.github.io/strvcf_annotator/
 
 Troubleshooting
 ---------------
