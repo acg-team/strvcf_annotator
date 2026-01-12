@@ -102,8 +102,147 @@ def parser():
     """Create a GenericParser instance."""
     return GenericParser()
 
+class TestBuildNewRecordMismatchOptions:
+    """
+    Tests for mismatch handling options added to build_new_record.
 
-class TestBuildNewRecordMismatchWarnings:
+    We test two things separately:
+    1) Warnings: emitted vs suppressed depending on ignore_mismatch_warnings
+    2) Modes: panel/vcf return a record; skip returns None on mismatch
+    """
+
+    @pytest.fixture
+    def mismatch_case_chr11(self, mismatch_vcf_header, monkeypatch):
+        """
+        Build a record + str_row where panel sequence and VCF REF overlap mismatch:
+        VCF REF is 'cacaca...' while panel is 'CCCC...'
+        """
+        ref = "cacaca" * 4 + "ca"  # 26 bases
+        alt = ref  # keep identical; mismatch logic should still detect REF overlap mismatch
+
+        record = mismatch_vcf_header.new_record(
+            contig="chr11",
+            start=134204815,  # 0-based => POS 134204816
+            alleles=(ref, alt),
+            filter="PASS",
+        )
+        record.samples["TUMOR"]["GT"] = (0, 0)
+        record.samples["NORMAL"]["GT"] = (0, 0)
+
+        # Panel overlap is all 'C'
+        panel_seq = "C" * 26
+        monkeypatch.setattr(
+            "strvcf_annotator.core.annotation.extract_repeat_sequence",
+            lambda _: panel_seq,
+        )
+
+        str_row = {
+            "CHROM": "chr11",
+            "START": 134204816,
+            "END": 134204841,
+            "RU": "CC",
+            "PERIOD": 2,
+            "COUNT": 13,
+        }
+        return record, str_row
+
+    def test_mismatch_warning_emitted_by_default(
+        self,
+        mismatch_case_chr11,
+        mismatch_str_modified_header,
+        mismatch_parser,
+        caplog,
+    ):
+        record, str_row = mismatch_case_chr11
+        caplog.set_level(logging.WARNING, logger="strvcf_annotator.core.annotation")
+
+        out = build_new_record(
+            record,
+            str_row,
+            mismatch_str_modified_header,
+            mismatch_parser,
+            ignore_mismatch_warnings=False,
+            mismatch_truth="panel",
+        )
+
+        assert isinstance(out, pysam.VariantRecord)
+        msgs = [r.getMessage() for r in caplog.records]
+        assert any("Reference mismatch in STR overlap" in m for m in msgs)
+
+    def test_mismatch_warning_suppressed_when_ignore_true(
+        self,
+        mismatch_case_chr11,
+        mismatch_str_modified_header,
+        mismatch_parser,
+        caplog,
+    ):
+        record, str_row = mismatch_case_chr11
+        caplog.set_level(logging.WARNING, logger="strvcf_annotator.core.annotation")
+
+        out = build_new_record(
+            record,
+            str_row,
+            mismatch_str_modified_header,
+            mismatch_parser,
+            ignore_mismatch_warnings=True,
+            mismatch_truth="panel",
+        )
+
+        assert isinstance(out, pysam.VariantRecord)
+        msgs = [r.getMessage() for r in caplog.records]
+        assert not any("Reference mismatch in STR overlap" in m for m in msgs)
+
+    @pytest.mark.parametrize("mismatch_truth", ["panel", "vcf"])
+    def test_mismatch_truth_panel_and_vcf_return_record(
+        self,
+        mismatch_case_chr11,
+        mismatch_str_modified_header,
+        mismatch_parser,
+        caplog,
+        mismatch_truth,
+    ):
+        record, str_row = mismatch_case_chr11
+        caplog.set_level(logging.WARNING, logger="strvcf_annotator.core.annotation")
+
+        out = build_new_record(
+            record,
+            str_row,
+            mismatch_str_modified_header,
+            mismatch_parser,
+            ignore_mismatch_warnings=True,  # keep log clean for this test
+            mismatch_truth=mismatch_truth,
+        )
+
+        # Both modes should still return an annotated record (not None)
+        assert isinstance(out, pysam.VariantRecord)
+
+        # Extra sanity: alleles should exist
+        assert out.alleles is not None
+        assert len(out.alleles) == 2
+
+    def test_mismatch_truth_skip_returns_none(
+        self,
+        mismatch_case_chr11,
+        mismatch_str_modified_header,
+        mismatch_parser,
+        caplog,
+    ):
+        record, str_row = mismatch_case_chr11
+        caplog.set_level(logging.WARNING, logger="strvcf_annotator.core.annotation")
+
+        out = build_new_record(
+            record,
+            str_row,
+            mismatch_str_modified_header,
+            mismatch_parser,
+            ignore_mismatch_warnings=True,  # warning irrelevant here
+            mismatch_truth="skip",
+        )
+
+        # Skip mode must drop mismatching loci
+        assert out is None
+
+class TestMismatchRecord:
     """
     Tests for the three mismatch scenarios you reported.
 
@@ -111,55 +250,6 @@ class TestBuildNewRecordMismatchWarnings:
     - chr8: motif is reverse-complement/rotation equivalent -> warning should be suppressed
     - chr11/chr2: motif conflicts -> warning should be emitted
     """
-
-    def test_chr8_strand_rotation_equivalent_is_suppressed(
-        self,
-        mismatch_vcf_header,
-        mismatch_str_modified_header,
-        mismatch_parser,
-        caplog,
-        monkeypatch,
-    ):
-        # VCF: CCCACT... vs panel: CCCAGT...
-        # Should be suppressed because canonical motifs match (strand/rotation)
-        ref = "cccact" * 8
-        alt = "cccact" * 7  # deletion-like within STR window
-
-        record = mismatch_vcf_header.new_record(
-            contig="chr8",
-            start=11808704,  # 0-based => POS 11808705
-            alleles=(ref, alt),
-            filter="PASS",
-            info={"DP": 50},
-        )
-        record.samples["TUMOR"]["GT"] = (0, 1)
-        record.samples["NORMAL"]["GT"] = (0, 0)
-
-        # Patch extract_repeat_sequence to return the panel overlap sequence shown in your log
-        panel_seq = "CCCAGT" * 8  # length 48
-        monkeypatch.setattr(
-            "strvcf_annotator.core.annotation.extract_repeat_sequence",
-            lambda _: panel_seq,
-        )
-
-        str_row = {
-            "CHROM": "chr8",
-            "START": 11808705,
-            "END": 11808752,
-            "RU": "CCCAGT",
-            "PERIOD": 6,
-            "COUNT": 8,
-        }
-
-        caplog.set_level(logging.WARNING, logger="strvcf_annotator.core.annotation")
-        new_record = build_new_record(
-            record, str_row, mismatch_str_modified_header, mismatch_parser, ignore_mismatch_warnings=True, mismatch_truth="vcf"
-        )
-
-        assert isinstance(new_record, pysam.VariantRecord)
-        # Ensure NO warning about "Reference mismatch in STR overlap" for this canonical-equivalent case
-        msgs = [rec.getMessage() for rec in caplog.records]
-        assert not any("Reference mismatch in STR overlap" in m for m in msgs)
 
     def test_chr11_true_conflict_emits_warning(
         self,

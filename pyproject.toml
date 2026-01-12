@@ -31,7 +31,7 @@ classifiers = [
 dependencies = [
     "pysam>=0.22.0",
     "pandas>=2.0.0",
-    "trtools"
+    "trtools>=5.0.0"
 ]
 
 [project.optional-dependencies]

@@ -206,7 +206,7 @@ def build_new_record(
                         panel_sub,
                         ref_sub,
                     )
-                if mismatch_truth == "skip":
+                if mismatch_truth == "skip" and raw_mismatch and not suppress:
                     # Skip this record due to mismatch
                     if not ignore_mismatch_warnings:
                         logger.warning("Skipping record...")
@@ -225,7 +225,7 @@ def build_new_record(
     try:
         mutated_seq = apply_variant_to_repeat(
             pos=pos,
-            ref=record.ref, # To keep correct case
+            ref=record.ref,  # To keep correct case
             alt=alt_base,
             repeat_start=repeat_start,
             repeat_seq=repeat_seq,
