@@ -160,46 +160,64 @@ def normalize_variant(pos: int, ref: str, alt: str) -> Tuple[int, str, str]:
 def apply_variant_to_repeat(
     pos: int, ref: str, alt: str, repeat_start: int, repeat_seq: str
 ) -> str:
-    """Apply a variant to the STR repeat sequence, with normalization.
+    """
+    Apply a variant to an STR repeat sequence.
 
-    1) Normalize (pos, ref, alt) by trimming shared prefix/suffix.
-    2) If the normalized variant lies fully inside the STR, apply the full ALT.
-    3) If it only partially overlaps, apply only the overlapping part:
-       - SNP-like (len(ref) == len(alt)): positional alignment.
-       - Indel-like (len(ref) != len(alt)): align overlapping part from the
-         end of ALT.
+    The function applies a VCF variant to a reference STR sequence while
+    respecting VCF normalization rules and STR boundaries.
 
-    Conceptually, we assume the genomic reference at this locus looks like
-    `repeat_seq + UNKNOWN_SUFFIX`. Any differences outside the STR window
-    are ignored when computing the mutated STR.
+    The algorithm works as follows:
 
-    Case handling
-    -------------
-    - Normalization and overlap logic are case-insensitive.
-    - The output casing follows the STR sequence at the overlapping segment:
-      * If the overlapping STR slice is all lowercase, ALT is lowercased.
-      * If it is all uppercase (typical), ALT is uppercased.
-      * Otherwise, ALT is used as-is.
+    1. Normalize ``pos``, ``ref``, and ``alt`` by trimming shared
+       prefixes and suffixes.
+    2. If the normalized variant lies fully inside the STR region,
+       apply the full ``ALT`` allele.
+    3. If the variant partially overlaps the STR region:
+
+       - **SNP-like** variants (``len(ref) == len(alt)``) are aligned
+         positionally.
+       - **Indel-like** variants (``len(ref) != len(alt)``) use the
+         suffix of ``ALT`` that overlaps the STR.
+
+    Any parts of the variant outside the STR window are ignored.
+
+    Notes
+    -----
+    The genomic reference is conceptually treated as::
+
+        repeat_seq + UNKNOWN_SUFFIX
+
+    Differences outside the STR window do not affect the resulting
+    mutated STR sequence.
+
+    Case handling rules:
+
+    - All matching and overlap logic is case-insensitive.
+    - Output case follows the overlapping STR segment:
+
+      - lowercase STR slice → lowercase ALT
+      - uppercase STR slice → uppercase ALT
+      - mixed case → ALT is left unchanged
 
     Parameters
     ----------
     pos : int
         Variant position (1-based VCF coordinate).
     ref : str
-        Reference allele from VCF.
+        Reference allele from the VCF record.
     alt : str
-        Alternate allele from VCF.
+        Alternate allele from the VCF record.
     repeat_start : int
-        Start position of repeat region (1-based).
+        Start position of the STR region (1-based).
     repeat_seq : str
-        Reference STR sequence (panel).
+        Reference STR sequence from the panel.
 
     Returns
     -------
     str
-        Mutated repeat sequence after applying the normalized variant
-        restricted to the STR window. If there is no overlap, returns
-        repeat_seq unchanged.
+        The mutated STR sequence after applying the variant.
+        If the variant does not overlap the STR region, the original
+        ``repeat_seq`` is returned unchanged.
     """
     repeat_len = len(repeat_seq)
 

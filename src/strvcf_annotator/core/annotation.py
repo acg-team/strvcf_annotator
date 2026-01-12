@@ -6,6 +6,7 @@ from typing import Dict, Union
 
 import pandas as pd
 import pysam
+from trtools.utils.utils import GetCanonicalMotif
 
 from ..parsers.base import BaseVCFParser
 from .repeat_utils import (
@@ -92,7 +93,9 @@ def build_new_record(
     str_row: Union[Dict, pd.Series],
     header: pysam.VariantHeader,
     parser: BaseVCFParser,
-) -> pysam.VariantRecord:
+    ignore_mismatch_warnings: bool = False,
+    mismatch_truth: str = "panel",  # "panel" | "vcf" | "skip"
+) -> Union[pysam.VariantRecord, None]:
     """Build annotated VCF record with STR alleles and metadata.
 
     Constructs a new VCF record where alleles represent full repeat sequences
@@ -109,6 +112,14 @@ def build_new_record(
         Modified header with STR fields
     parser : BaseVCFParser
         Parser for extracting genotype information
+    ignore_mismatch_warnings : bool
+        If True, do not log mismatch warnings between VCF REF and panel repeat sequence.
+        Annotation continues regardless.
+    mismatch_truth : str
+        Which source to treat as correct when there is a mismatch:
+          - "panel": trust panel repeat sequence (default behavior)
+          - "vcf": trust VCF REF. patch the panel repeat sequence overlap to match VCF REF
+          - "skip": skip record with mismatch
 
     Returns
     -------
@@ -121,67 +132,140 @@ def build_new_record(
     - Calculates repeat copy numbers for REF and ALT
     - Marks PERFECT=TRUE only if both alleles are perfect repeats
     - Preserves all original FORMAT fields
+    - Returns None if there is a reference mismatch and mismatch_truth is "skip"
     """
-    repeat_start = str_row["START"]
+    mismatch_truth = (mismatch_truth or "panel").lower()
+    if mismatch_truth not in {"panel", "vcf", "skip"}:
+        raise ValueError("mismatch_truth must be one of: 'panel', 'vcf', 'skip'")
+
+    repeat_start = int(str_row["START"])
+    repeat_end = int(str_row["END"])
     repeat_seq = extract_repeat_sequence(str_row)
-    ref_base = record.ref
-    alt_base = record.alts[0] if record.alts else ref_base
+    repeat_seq = (repeat_seq or "").upper()
+
+    # Variant alleles
+    ref_base = record.ref.upper()
+    pos = int(record.pos)
+
+    period = int(str_row["PERIOD"])
+    ru = (str_row.get("RU") or "").upper()
+
+    # Overlap check + (optional) patching if VCF is truth
+    # We compare overlap between VCF REF and panel repeat sequence.
+    # If mismatch_truth == "vcf" and there is overlap, we patch repeat_seq's overlap
+    # to match VCF REF overlap before applying the variant.
     repeat_len = len(repeat_seq)
-    repeat_end = repeat_start + repeat_len - 1
+    panel_sub = ""
+    ref_sub = ""
+    suppress = False
+    raw_mismatch = False
 
-    # Verify reference matches
-    var_start = record.pos
-    var_end = record.pos + len(ref_base) - 1  # inclusive
+    if repeat_len > 0 and len(ref_base) > 0:
+        repeat_end_seq = repeat_start + repeat_len - 1  # inclusive
+        var_start = pos
+        var_end = pos + len(ref_base) - 1  # inclusive
 
-    # --- 1) Check overlap between REF and panel sequence ---
-    # Compute genomic overlap between [var_start, var_end] and [repeat_start, repeat_end]
-    overlap_start = max(repeat_start, var_start)
-    overlap_end = min(repeat_end, var_end)
+        overlap_start = max(repeat_start, var_start)
+        overlap_end = min(repeat_end_seq, var_end)
 
-    if overlap_start <= overlap_end:
-        overlap_len = overlap_end - overlap_start + 1
+        if overlap_start <= overlap_end:
+            overlap_len = overlap_end - overlap_start + 1
 
-        # Indices into repeat_seq (0-based)
-        rep_start_idx = overlap_start - repeat_start
-        rep_end_idx_excl = rep_start_idx + overlap_len
+            rep_start_idx = overlap_start - repeat_start
+            rep_end_idx_excl = rep_start_idx + overlap_len
 
-        # Indices into REF (0-based)
-        ref_start_idx = overlap_start - var_start
-        ref_end_idx_excl = ref_start_idx + overlap_len
+            ref_start_idx = overlap_start - var_start
+            ref_end_idx_excl = ref_start_idx + overlap_len
 
-        panel_sub = repeat_seq[rep_start_idx:rep_end_idx_excl]
-        ref_sub = ref_base[ref_start_idx:ref_end_idx_excl]
+            panel_sub = repeat_seq[rep_start_idx:rep_end_idx_excl]
+            ref_sub = ref_base[ref_start_idx:ref_end_idx_excl]
 
-        if panel_sub.upper() != ref_sub.upper():
-            logger.warning(
-                "Reference mismatch in STR overlap: VCF %s:%d %s>%s, "
-                "STR panel %s:%d-%d RU=%s\n"
-                "Panel overlap: %s\n"
-                "VCF REF overlap: %s",
-                record.contig,
-                record.pos,
-                record.alleles[0],
-                record.alleles[1],
-                str_row["CHROM"],
-                str_row["START"],
-                str_row["END"],
-                str_row["RU"],
-                panel_sub,
-                ref_sub,
-            )
+            raw_mismatch = panel_sub != ref_sub
 
-    # Apply mutation to get alternate sequence
-    mutated_seq = apply_variant_to_repeat(record.pos, ref_base, alt_base, repeat_start, repeat_seq)
+            # Suppress if canonically it is the same RU
+            if raw_mismatch and ru and period > 0 and len(ref_sub) >= period:
+                ru_panel_c = GetCanonicalMotif(ru)
+                ru_vcf_c = GetCanonicalMotif(ref_sub[:period])
+                suppress = ru_panel_c == ru_vcf_c
 
-    # Count repeat units
-    ru = str_row["RU"]
-    ref_len = count_repeat_units(repeat_seq, ru)
-    alt_len = count_repeat_units(mutated_seq, ru)
-    perfect = is_perfect_repeat(repeat_seq, ru) and is_perfect_repeat(mutated_seq, ru)
+            if raw_mismatch and (not suppress):
+                if not ignore_mismatch_warnings:
+                    logger.warning(
+                        "Reference mismatch in STR overlap: VCF %s:%d %s>%s, "
+                        "STR panel %s:%d-%d RU=%s\n"
+                        "Panel overlap: %s\n"
+                        "VCF REF overlap: %s. ",
+                        record.contig,
+                        record.pos,
+                        record.alleles[0],
+                        record.alleles[1] if record.alts else record.alleles[0],
+                        str_row.get("CHROM", record.contig),
+                        repeat_start,
+                        repeat_end,
+                        ru,
+                        panel_sub,
+                        ref_sub,
+                    )
+                if mismatch_truth == "skip":
+                    # Skip this record due to mismatch
+                    if not ignore_mismatch_warnings:
+                        logger.warning("Skipping record...")
+                    return None
+
+                # If user says VCF is truth, patch the panel repeat sequence overlap to match VCF REF
+                # (only when overlap exists; if no overlap, nothing to patch)
+                if mismatch_truth == "vcf":
+                    # Patch even if canonical-equivalent; "vcf truth" means the literal bases matter.
+                    if not ignore_mismatch_warnings:
+                        logger.warning("Use VCF as ground truth...")
+                    before = repeat_seq[:rep_start_idx]
+                    after = repeat_seq[rep_end_idx_excl:]
+                    repeat_seq = (before + ref_sub + after).upper()
+                else:
+                    if not ignore_mismatch_warnings:
+                        logger.warning("Use STR panel as ground truth...")
+
+    alt_base = (record.alts[0] if record.alts else record.ref)
+    # Apply the variant to the STR sequence
+    try:
+        mutated_seq = apply_variant_to_repeat(
+            pos=pos,
+            ref=record.ref,  # To keep correct case
+            alt=alt_base,
+            repeat_start=repeat_start,
+            repeat_seq=repeat_seq,
+        )
+    except Exception as e:
+        logger.warning(
+            "Failed to apply variant to repeat sequence; keeping REF allele. "
+            "VCF %s:%d %s>%s; error=%s",
+            record.contig,
+            pos,
+            record.ref,
+            alt_base,
+            str(e),
+        )
+        mutated_seq = repeat_seq
+
+    mutated_seq = (mutated_seq or repeat_seq).upper()
+
+    # RU fallback if missing
+    if not ru:
+        ru = repeat_seq[:period].upper() if period > 0 else ""
+
+    # Count repeat units and perfectness
+    if ru:
+        ref_len = count_repeat_units(repeat_seq, ru)
+        alt_len = count_repeat_units(mutated_seq, ru)
+        perfect = is_perfect_repeat(repeat_seq, ru) and is_perfect_repeat(mutated_seq, ru)
+    else:
+        ref_len = 0
+        alt_len = 0
+        perfect = False
 
     # Prepare INFO fields - only copy safe, commonly used fields
     # to avoid type/Number mismatches with fields from original VCF
-    info = {}
+    info: Dict = {}
 
     # List of safe INFO fields to copy if they exist in original record
     safe_info_fields = ["NS", "DP", "AF", "AC", "AN", "MQ", "SB"]
@@ -196,46 +280,59 @@ def build_new_record(
     info.update(
         {
             "RU": ru,
-            "PERIOD": int(str_row["PERIOD"]),
+            "PERIOD": int(period),
             "REF": int(ref_len),
             "PERFECT": "TRUE" if perfect else "FALSE",
         }
     )
 
-    # Create new record
+    # Create new record ---
     new_record = header.new_record(
         contig=record.contig,
-        start=repeat_start - 1,
-        stop=str_row["END"],
+        start=repeat_start - 1,  # pysam uses 0-based start
+        stop=repeat_end,  # keep as provided
         id=".",
         alleles=(repeat_seq, mutated_seq),
         info=info,
         filter=record.filter.keys(),
     )
 
-    # Copy FORMAT fields and add REPCN
-    for sample_name in record.samples:
-        # Copy all FORMAT fields except GT and REPCN (we'll set those)
+    # Copy FORMAT fields and set GT/REPCN
+    sample_names = list(record.samples.keys())
+    for sample_name in sample_names:
         old_sample = record.samples[sample_name]
         new_sample = new_record.samples[sample_name]
 
         for field_name in old_sample:
-            if field_name not in ["GT", "REPCN"]:
-                with contextlib.suppress(TypeError, ValueError):
-                    new_sample[field_name] = old_sample[field_name]
-                    # Skip fields that can't be copied (e.g., incompatible types)
+            if field_name in ("GT", "REPCN"):
+                continue
+            with contextlib.suppress(TypeError, ValueError):
+                new_sample[field_name] = old_sample[field_name]
 
-        # Get genotype using parser and set GT + REPCN
-        sample_idx = list(record.samples.keys()).index(sample_name)
+        sample_idx = sample_names.index(sample_name)
         gt = parser.get_genotype(record, sample_idx)
 
-        if gt is not None:
-            alleles = [ref_len if allele == 0 else alt_len if allele == 1 else 0 for allele in gt]
-            new_sample["GT"] = gt
-            new_sample["REPCN"] = alleles
-        else:
+        if gt is None:
             new_sample["GT"] = (None, None)
             new_sample["REPCN"] = (0, 0)
+            continue
+
+        repcns = []
+        for allele in gt:
+            if allele == 0:
+                repcns.append(int(ref_len))
+            elif allele == 1:
+                repcns.append(int(alt_len))
+            else:
+                repcns.append(0)
+
+        if len(repcns) == 1:
+            repcns = repcns + [0]
+        elif len(repcns) > 2:
+            repcns = repcns[:2]
+
+        new_sample["GT"] = gt
+        new_sample["REPCN"] = tuple(repcns)
 
     return new_record
 

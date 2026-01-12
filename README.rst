@@ -94,7 +94,6 @@ VCF file
 A standard VCF with variants. Must contain:
 
 - FORMAT field **GT** (genotype)
-- Optional: **AD** (allelic depth), **DP** (total depth)
 
 Output format
 -------------
@@ -161,14 +160,6 @@ Creating a custom parser
 Troubleshooting
 ---------------
 
-Issue: ModuleNotFoundError
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: shell
-
-    # Install the package in editable (dev) mode
-    pip install -e .
-
 Issue: Unnormalized VCF
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -198,12 +189,6 @@ If you see warnings about a reference mismatch, check:
 
 - The correctness of the STR BED file
 - Matching reference genome versions
-
-Documentation
--------------
-
-* `API Documentation <docs/API.md>`_
-* `Examples <examples/>`_
 
 Contributing
 ------------

@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class STRAnnotator:
-    """Main class for STR annotation functionality.
+    """
+    Main class for STR annotation functionality.
 
     Provides a high-level interface for annotating VCF files with STR
     (Short Tandem Repeat) information. Supports both single file and
@@ -28,8 +29,25 @@ class STRAnnotator:
     parser : BaseVCFParser, optional
         Custom parser for genotype extraction. Uses GenericParser if None.
     somatic_mode : bool, optional
-        Enable somatic filtering mode. When True, skips variants where both
-        samples (tumor/normal) have identical genotypes. Default is False.
+        Enable somatic filtering. When ``True``, variants where all samples
+        have identical genotypes are skipped. If ``None``, the value set on
+        the annotator instance is used.
+    ignore_mismatch_warnings : bool, optional
+        If ``True``, suppress warnings about reference mismatches between
+        the STR panel sequence and the VCF ``REF`` allele. If ``None``,
+        the value set on the annotator instance is used.
+    mismatch_truth : str, optional
+        Specifies which source is treated as ground truth when a mismatch
+        between the STR panel and VCF ``REF`` allele is detected.
+
+        Allowed values are:
+
+        - ``"panel"``: trust the STR panel repeat sequence (default)
+        - ``"vcf"``: trust the VCF ``REF`` allele and patch the overlapping
+        panel sequence
+        - ``"skip"``: skip variants with mismatches entirely
+
+        If ``None``, the value set on the annotator instance is used.
 
     Attributes
     ----------
@@ -53,139 +71,254 @@ class STRAnnotator:
     >>> # Stream processing
     >>> vcf_in = pysam.VariantFile('input.vcf')
     >>> for record in annotator.annotate_vcf_stream(vcf_in):
-    ...     print(record)
+    ...     print(record.info['RU'])
     """
 
     def __init__(
-        self, str_bed_path: str, parser: Optional[BaseVCFParser] = None, somatic_mode: bool = False
+        self,
+        str_bed_path: str,
+        parser: Optional[BaseVCFParser] = None,
+        somatic_mode: bool = False,
+        ignore_mismatch_warnings: bool = False,
+        mismatch_truth: str = "panel",  # "panel" | "vcf" | "skip"
     ):
-        """Initialize STR annotator with reference and parser.
-
-        Parameters
-        ----------
-        str_bed_path : str
-            Path to BED file with STR regions
-        parser : BaseVCFParser, optional
-            Custom parser for genotype extraction
-        somatic_mode : bool, optional
-            Enable somatic filtering (skip variants where tumor==normal genotypes).
-            Default is False.
-
-        Raises
-        ------
-        ValidationError
-            If STR BED file is invalid
-        """
-        # Validate and load STR reference
         validate_str_bed_file(str_bed_path)
         self.str_bed_path = str_bed_path
         self.str_df = load_str_reference(str_bed_path)
 
-        # Set parser
         self.parser = parser if parser is not None else GenericParser()
-
-        # Set somatic mode
         self.somatic_mode = somatic_mode
+
+        self.ignore_mismatch_warnings = ignore_mismatch_warnings
+        self.mismatch_truth = mismatch_truth
 
         logger.info(f"Loaded {len(self.str_df)} STR regions from {str_bed_path}")
 
-    def annotate_vcf_file(self, input_path: str, output_path: str) -> None:
-        """Annotate single VCF file.
+    def annotate_vcf_file(
+        self,
+        input_path: str,
+        output_path: str,
+        *,
+        somatic_mode: Optional[bool] = None,
+        ignore_mismatch_warnings: Optional[bool] = None,
+        mismatch_truth: Optional[str] = None,
+    ) -> None:
+        """
+        Annotate a single VCF file with STR information.
 
-        Reads a VCF file, annotates variants overlapping with STR regions,
-        and writes the annotated records to an output file.
+        This method reads a VCF file, annotates variants that overlap STR regions,
+        and writes the annotated records to an output VCF file.
 
         Parameters
         ----------
         input_path : str
-            Path to input VCF file
+            Path to the input VCF file.
         output_path : str
-            Path to output VCF file
+            Path to the output annotated VCF file.
+        somatic_mode : bool, optional
+            Enable somatic filtering. When ``True``, variants where all samples
+            have identical genotypes are skipped. If ``None``, the value set on
+            the annotator instance is used.
+        ignore_mismatch_warnings : bool, optional
+            If ``True``, suppress warnings about reference mismatches between
+            the STR panel sequence and the VCF ``REF`` allele. If ``None``,
+            the value set on the annotator instance is used.
+        mismatch_truth : str, optional
+            Specifies which source is treated as ground truth when a mismatch
+            between the STR panel and VCF ``REF`` allele is detected.
+
+            Allowed values are:
+
+            - ``"panel"``: trust the STR panel repeat sequence (default)
+            - ``"vcf"``: trust the VCF ``REF`` allele and patch the overlapping
+            panel sequence
+            - ``"skip"``: skip variants with mismatches entirely
+
+            If ``None``, the value set on the annotator instance is used.
 
         Raises
         ------
         ValidationError
-            If input VCF file is invalid
+            If the input VCF file is invalid.
 
         Examples
         --------
-        >>> annotator = STRAnnotator('str_regions.bed')
-        >>> annotator.annotate_vcf_file('input.vcf', 'output.vcf')
+        >>> annotator = STRAnnotator("str_regions.bed")
+        >>> annotator.annotate_vcf_file("input.vcf", "output.vcf")
         """
         # Validate input
         validate_vcf_file(input_path)
+        imw = (
+            self.ignore_mismatch_warnings
+            if ignore_mismatch_warnings is None
+            else ignore_mismatch_warnings
+        )
+        mtruth = self.mismatch_truth if mismatch_truth is None else mismatch_truth
+        smode = self.somatic_mode if somatic_mode is None else somatic_mode
 
         # Annotate
         logger.info(f"Annotating {input_path}...")
         annotate_vcf_to_file(
-            input_path, self.str_df, output_path, self.parser, somatic_mode=self.somatic_mode
+            input_path,
+            self.str_df,
+            output_path,
+            self.parser,
+            somatic_mode=smode,
+            ignore_mismatch_warnings=imw,
+            mismatch_truth=mtruth,
         )
         logger.info(f"Wrote annotated VCF to {output_path}")
 
-    def annotate_vcf_stream(self, vcf_in: pysam.VariantFile) -> Iterator[pysam.VariantRecord]:
-        """Annotate VCF records from stream.
+    def annotate_vcf_stream(
+        self,
+        vcf_in: pysam.VariantFile,
+        *,
+        somatic_mode: Optional[bool] = None,
+        ignore_mismatch_warnings: Optional[bool] = None,
+        mismatch_truth: Optional[str] = None,
+    ) -> Iterator[pysam.VariantRecord]:
+        """
+        Annotate VCF records from an open stream.
 
-        Generator that yields annotated VCF records from an open VCF file.
-        Useful for streaming processing or custom workflows.
+        This generator yields annotated VCF records from an already opened
+        ``pysam.VariantFile`` object. It is useful for streaming workflows
+        or custom processing pipelines.
 
         Parameters
         ----------
         vcf_in : pysam.VariantFile
-            Open VCF file object
+            Open VCF file object to read variants from.
+        somatic_mode : bool, optional
+            Enable somatic filtering. When ``True``, variants where all samples
+            have identical genotypes are skipped. If ``None``, the value set on
+            the annotator instance is used.
+        ignore_mismatch_warnings : bool, optional
+            If ``True``, suppress warnings about reference mismatches between
+            the STR panel sequence and the VCF ``REF`` allele. If ``None``,
+            the value set on the annotator instance is used.
+        mismatch_truth : str, optional
+            Specifies which source is treated as ground truth when a mismatch
+            between the STR panel and VCF ``REF`` allele is detected.
+
+            Allowed values are:
+
+            - ``"panel"``: trust the STR panel repeat sequence (default)
+            - ``"vcf"``: trust the VCF ``REF`` allele and patch the overlapping
+            panel sequence
+            - ``"skip"``: skip variants with mismatches entirely
+
+            If ``None``, the value set on the annotator instance is used.
 
         Yields
         ------
         pysam.VariantRecord
-            Annotated VCF records
+            Annotated VCF records.
 
         Examples
         --------
-        >>> annotator = STRAnnotator('str_regions.bed')
-        >>> vcf_in = pysam.VariantFile('input.vcf')
+        >>> annotator = STRAnnotator("str_regions.bed")
+        >>> vcf_in = pysam.VariantFile("input.vcf")
         >>> for record in annotator.annotate_vcf_stream(vcf_in):
-        ...     # Process record
-        ...     print(record.info['RU'])
+        ...     print(record.info["RU"])
         """
+        imw = (
+            self.ignore_mismatch_warnings
+            if ignore_mismatch_warnings is None
+            else ignore_mismatch_warnings
+        )
+        mtruth = self.mismatch_truth if mismatch_truth is None else mismatch_truth
+        smode = self.somatic_mode if somatic_mode is None else somatic_mode
+
         yield from generate_annotated_records(
-            vcf_in, self.str_df, self.parser, somatic_mode=self.somatic_mode
+            vcf_in=vcf_in,
+            str_df=self.str_df,
+            parser=self.parser,
+            somatic_mode=smode,
+            ignore_mismatch_warnings=imw,
+            mismatch_truth=mtruth,
         )
 
-    def process_directory(self, input_dir: str, output_dir: str) -> None:
-        """Batch process directory of VCF files.
+    def process_directory(
+        self,
+        input_dir: str,
+        output_dir: str,
+        *,
+        somatic_mode: Optional[bool] = None,
+        ignore_mismatch_warnings: Optional[bool] = None,
+        mismatch_truth: Optional[str] = None,
+    ) -> None:
+        """
+        Batch process a directory of VCF files.
 
-        Processes all VCF files in a directory and writes annotated versions
-        to the output directory. Skips files that have already been processed.
+        This method processes all VCF files in the input directory and writes
+        annotated versions to the output directory. Files that have already
+        been processed are skipped automatically.
 
         Parameters
         ----------
         input_dir : str
-            Directory containing input VCF files
+            Directory containing input VCF files.
         output_dir : str
-            Directory for output VCF files (created if doesn't exist)
+            Directory where annotated VCF files will be written. The directory
+            is created if it does not already exist.
+        somatic_mode : bool, optional
+            Enable somatic filtering. When ``True``, variants where all samples
+            have identical genotypes are skipped. If ``None``, the value set on
+            the annotator instance is used.
+        ignore_mismatch_warnings : bool, optional
+            If ``True``, suppress warnings about reference mismatches between
+            the STR panel sequence and the VCF ``REF`` allele. If ``None``,
+            the value set on the annotator instance is used.
+        mismatch_truth : str, optional
+            Specifies which source is treated as ground truth when a mismatch
+            between the STR panel and VCF ``REF`` allele is detected.
+
+            Allowed values are:
+
+            - ``"panel"``: trust the STR panel repeat sequence (default)
+            - ``"vcf"``: trust the VCF ``REF`` allele and patch the overlapping
+            panel sequence
+            - ``"skip"``: skip variants with mismatches entirely
+
+            If ``None``, the value set on the annotator instance is used.
 
         Raises
         ------
         ValidationError
-            If input directory is invalid
+            If the input directory is invalid.
 
         Examples
         --------
-        >>> annotator = STRAnnotator('str_regions.bed')
-        >>> annotator.process_directory('vcf_files/', 'annotated_vcfs/')
+        >>> annotator = STRAnnotator("str_regions.bed")
+        >>> annotator.process_directory("vcf_files/", "annotated_vcfs/")
         """
         # Validate directories
         validate_directory_path(input_dir, must_exist=True)
         validate_directory_path(output_dir, must_exist=False, create=True)
 
+        imw = (
+            self.ignore_mismatch_warnings
+            if ignore_mismatch_warnings is None
+            else ignore_mismatch_warnings
+        )
+        mtruth = self.mismatch_truth if mismatch_truth is None else mismatch_truth
+        smode = self.somatic_mode if somatic_mode is None else somatic_mode
         # Process directory
         logger.info(f"Processing VCF files in {input_dir}...")
         process_directory(
-            input_dir, self.str_bed_path, output_dir, self.parser, somatic_mode=self.somatic_mode
+            input_dir=input_dir,
+            str_bed_path=self.str_bed_path,
+            output_dir=output_dir,
+            parser=self.parser,
+            somatic_mode=smode,
+            ignore_mismatch_warnings=imw,
+            mismatch_truth=mtruth,
         )
         logger.info(f"Batch processing complete. Output in {output_dir}")
 
     def get_str_at_position(self, chrom: str, pos: int) -> Optional[dict]:
-        """Get STR region at specific genomic position.
+        """
+        Get STR region at specific genomic position.
 
         Parameters
         ----------
@@ -211,7 +344,8 @@ class STRAnnotator:
         return get_str_at_position(self.str_df, chrom, pos)
 
     def get_statistics(self) -> dict:
-        """Get statistics about loaded STR regions.
+        """
+        Get statistics about loaded STR regions.
 
         Returns
         -------
@@ -236,27 +370,64 @@ class STRAnnotator:
 
 
 def annotate_vcf(
-    input_vcf: str, str_bed: str, output_vcf: str, parser: Optional[BaseVCFParser] = None
+    input_vcf: str,
+    str_bed: str,
+    output_vcf: str,
+    parser: Optional[BaseVCFParser] = None,
+    *,
+    somatic_mode: Optional[bool] = None,
+    ignore_mismatch_warnings: Optional[bool] = None,
+    mismatch_truth: Optional[str] = None,
 ) -> None:
-    """Convenience function for single VCF annotation.
+    """
+    Convenience function for single VCF annotation.
 
-    Simple function interface for annotating a single VCF file.
+    This is a simplified functional interface for annotating a single VCF
+    file with STR information, without explicitly creating an
+    :class:`STRAnnotator` instance.
 
     Parameters
     ----------
     input_vcf : str
-        Path to input VCF file
+        Path to the input VCF file.
     str_bed : str
-        Path to STR BED file
+        Path to the STR BED file.
     output_vcf : str
-        Path to output VCF file
+        Path to the output annotated VCF file.
     parser : BaseVCFParser, optional
-        Custom parser for genotype extraction
+        Custom parser for genotype extraction. If not provided,
+        :class:`GenericParser` is used.
+    somatic_mode : bool, optional
+        Enable somatic filtering. When ``True``, variants where all samples
+        have identical genotypes are skipped. If ``None``, the default
+        behavior is used.
+    ignore_mismatch_warnings : bool, optional
+        If ``True``, suppress warnings about reference mismatches between
+        the STR panel sequence and the VCF ``REF`` allele. If ``None``,
+        the default behavior is used.
+    mismatch_truth : str, optional
+        Specifies which source is treated as ground truth when a mismatch
+        between the STR panel and the VCF ``REF`` allele is detected.
+
+        Allowed values are:
+
+        - ``"panel"``: trust the STR panel repeat sequence (default)
+        - ``"vcf"``: trust the VCF ``REF`` allele and patch the overlapping
+          panel sequence
+        - ``"skip"``: skip variants with mismatches entirely
+
+        If ``None``, the default behavior is used.
 
     Examples
     --------
     >>> from strvcf_annotator import annotate_vcf
-    >>> annotate_vcf('input.vcf', 'str_regions.bed', 'output.vcf')
+    >>> annotate_vcf("input.vcf", "str_regions.bed", "output.vcf")
     """
     annotator = STRAnnotator(str_bed, parser)
-    annotator.annotate_vcf_file(input_vcf, output_vcf)
+    annotator.annotate_vcf_file(
+        input_vcf,
+        output_vcf,
+        somatic_mode=somatic_mode,
+        ignore_mismatch_warnings=ignore_mismatch_warnings,
+        mismatch_truth=mismatch_truth,
+    )
