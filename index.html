@@ -1,0 +1,330 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>strvcf_annotator documentation &mdash; strvcf_annotator 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e259d695"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Main functionality" href="main.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            strvcf_annotator
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="main.html">Main functionality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Dev Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">Command-line interface</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">strvcf_annotator</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">strvcf_annotator documentation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="strvcf-annotator-documentation">
+<h1>strvcf_annotator documentation<a class="headerlink" href="#strvcf-annotator-documentation" title="Link to this heading"></a></h1>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="main.html">Main functionality</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="main.html#strvcf_annotator.api.STRAnnotator"><code class="docutils literal notranslate"><span class="pre">STRAnnotator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html#strvcf_annotator.api.annotate_vcf"><code class="docutils literal notranslate"><span class="pre">annotate_vcf()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Dev Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-strvcf_annotator.core.annotation">Annotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-strvcf_annotator.core.vcf_processor">Process vcf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-strvcf_annotator.utils.validation">VCF validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-strvcf_annotator.utils.vcf_utils">VCF utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-strvcf_annotator.core.str_reference">STR reference processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-strvcf_annotator.core.repeat_utils">Repeat utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-strvcf_annotator.parsers.base">Parser class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-strvcf_annotator.parsers.generic">Generic parser</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">Command-line interface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#strvcf-annotator">strvcf-annotator</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<section id="strvcf-annotator">
+<h2>strvcf_annotator<a class="headerlink" href="#strvcf-annotator" title="Link to this heading"></a></h2>
+<p>STR (Short Tandem Repeat) annotation tool for VCF files.</p>
+<p><cite>strvcf_annotator</cite> is a Python library and CLI tool for annotating
+variants in VCF files that overlap short tandem repeat (STR) regions.
+The tool converts SNPs, SNVs and indels into full repeat sequences and adds STR metadata.</p>
+<section id="installation">
+<h3>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h3>
+<p>Package is available through <a class="reference external" href="https://pypi.org/project/strvcf-annotator/">PyPI</a>. To install, type:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>strvcf-annotator
+</pre></div>
+</div>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install from source</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/acg-team/strvcf_annotator.git
+<span class="nb">cd</span><span class="w"> </span>strvcf_annotator
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</pre></div>
+</div>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Dev dependencies</span>
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements_dev.txt
+</pre></div>
+</div>
+</section>
+<section id="quick-start">
+<h3>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h3>
+<section id="command-line">
+<h4>Command Line<a class="headerlink" href="#command-line" title="Link to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Annotate a single VCF</span>
+strvcf-annotator<span class="w"> </span>--input<span class="w"> </span>input.vcf<span class="w"> </span>--str-bed<span class="w"> </span>repeats.bed<span class="w"> </span>--output<span class="w"> </span>output.vcf
+
+<span class="c1"># Batch-process a directory</span>
+strvcf-annotator<span class="w"> </span>--input-dir<span class="w"> </span>vcf_files/<span class="w"> </span>--str-bed<span class="w"> </span>repeats.bed<span class="w"> </span>--output-dir<span class="w"> </span>annotated/
+
+<span class="c1"># With verbose logging</span>
+strvcf-annotator<span class="w"> </span>--input<span class="w"> </span>input.vcf<span class="w"> </span>--str-bed<span class="w"> </span>repeats.bed<span class="w"> </span>--output<span class="w"> </span>output.vcf<span class="w"> </span>--verbose
+</pre></div>
+</div>
+</section>
+<section id="library-usage">
+<h4>Library Usage<a class="headerlink" href="#library-usage" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">strvcf_annotator</span><span class="w"> </span><span class="kn">import</span> <span class="n">STRAnnotator</span>
+
+<span class="c1"># Create the annotator</span>
+<span class="n">annotator</span> <span class="o">=</span> <span class="n">STRAnnotator</span><span class="p">(</span><span class="s1">&#39;repeats.bed&#39;</span><span class="p">)</span>
+
+<span class="c1"># Annotate a single file</span>
+<span class="n">annotator</span><span class="o">.</span><span class="n">annotate_vcf_file</span><span class="p">(</span><span class="s1">&#39;input.vcf&#39;</span><span class="p">,</span> <span class="s1">&#39;output.vcf&#39;</span><span class="p">)</span>
+
+<span class="c1"># Batch processing</span>
+<span class="n">annotator</span><span class="o">.</span><span class="n">process_directory</span><span class="p">(</span><span class="s1">&#39;vcf_files/&#39;</span><span class="p">,</span> <span class="s1">&#39;annotated/&#39;</span><span class="p">)</span>
+
+<span class="c1"># Streaming processing</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pysam</span>
+<span class="n">vcf_in</span> <span class="o">=</span> <span class="n">pysam</span><span class="o">.</span><span class="n">VariantFile</span><span class="p">(</span><span class="s1">&#39;input.vcf&#39;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">annotator</span><span class="o">.</span><span class="n">annotate_vcf_stream</span><span class="p">(</span><span class="n">vcf_in</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Repeat unit: </span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;RU&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="input-format">
+<h3>Input format<a class="headerlink" href="#input-format" title="Link to this heading"></a></h3>
+<section id="bed-file-with-str-regions">
+<h4>BED file with STR regions<a class="headerlink" href="#bed-file-with-str-regions" title="Link to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>CHROM<span class="w">   </span>START<span class="w">   </span>END<span class="w">     </span>PERIOD<span class="w">  </span>RU
+chr1<span class="w">    </span><span class="m">100</span><span class="w">     </span><span class="m">115</span><span class="w">     </span><span class="m">3</span><span class="w">       </span>CAG
+chr1<span class="w">    </span><span class="m">200</span><span class="w">     </span><span class="m">212</span><span class="w">     </span><span class="m">4</span><span class="w">       </span>ATCG
+chr2<span class="w">    </span><span class="m">300</span><span class="w">     </span><span class="m">318</span><span class="w">     </span><span class="m">3</span><span class="w">       </span>GAT
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>CHROM</strong>: Chromosome name</p></li>
+<li><p><strong>START</strong>: Start position (0-based, BED format)</p></li>
+<li><p><strong>END</strong>: End position (0-based, exclusive)</p></li>
+<li><p><strong>PERIOD</strong>: Repeat unit length</p></li>
+<li><p><strong>RU</strong>: Repeat unit sequence</p></li>
+</ul>
+</section>
+<section id="vcf-file">
+<h4>VCF file<a class="headerlink" href="#vcf-file" title="Link to this heading"></a></h4>
+<p>A standard VCF with variants. Must contain:</p>
+<ul class="simple">
+<li><p>FORMAT field <strong>GT</strong> (genotype)</p></li>
+</ul>
+</section>
+</section>
+<section id="output-format">
+<h3>Output format<a class="headerlink" href="#output-format" title="Link to this heading"></a></h3>
+<p>The annotated VCF contains additional fields:</p>
+<section id="info-fields">
+<h4>INFO fields<a class="headerlink" href="#info-fields" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>RU</strong>: Repeat unit</p></li>
+<li><p><strong>PERIOD</strong>: Repeat period (unit length)</p></li>
+<li><p><strong>REF</strong>: Reference copy number</p></li>
+<li><p><strong>PERFECT</strong>: TRUE if both alleles are perfect repeats</p></li>
+</ul>
+</section>
+<section id="format-fields">
+<h4>FORMAT fields<a class="headerlink" href="#format-fields" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>REPCN</strong>: Genotype expressed as repeat copy numbers</p></li>
+</ul>
+</section>
+<section id="example">
+<h4>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1">##INFO=&lt;ID=RU,Number=1,Type=String,Description=&quot;Repeat unit&quot;&gt;</span>
+<span class="c1">##INFO=&lt;ID=PERIOD,Number=1,Type=Integer,Description=&quot;Repeat period&quot;&gt;</span>
+<span class="c1">##INFO=&lt;ID=REF,Number=1,Type=Integer,Description=&quot;Reference copy number&quot;&gt;</span>
+<span class="c1">##INFO=&lt;ID=PERFECT,Number=1,Type=String,Description=&quot;Perfect repeat indicator&quot;&gt;</span>
+<span class="c1">##FORMAT=&lt;ID=REPCN,Number=2,Type=Integer,Description=&quot;Repeat copy number&quot;&gt;</span>
+
+<span class="c1">#CHROM  POS  ID  REF         ALT             QUAL  FILTER  INFO                              FORMAT      Sample1</span>
+chr1<span class="w">    </span><span class="m">101</span><span class="w">  </span>.<span class="w">   </span>CAGCAGCAG<span class="w">   </span>CAGCAGCAGCAG<span class="w">    </span>.<span class="w">     </span>.<span class="w">       </span><span class="nv">RU</span><span class="o">=</span>CAG<span class="p">;</span><span class="nv">PERIOD</span><span class="o">=</span><span class="m">3</span><span class="p">;</span><span class="nv">REF</span><span class="o">=</span><span class="m">3</span><span class="p">;</span><span class="nv">PERFECT</span><span class="o">=</span>TRUE<span class="w">  </span>GT:REPCN<span class="w">    </span><span class="m">0</span>/1:3,4
+</pre></div>
+</div>
+</section>
+</section>
+<section id="extending-functionality">
+<h3>Extending functionality<a class="headerlink" href="#extending-functionality" title="Link to this heading"></a></h3>
+<section id="creating-a-custom-parser">
+<h4>Creating a custom parser<a class="headerlink" href="#creating-a-custom-parser" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">strvcf_annotator.parsers.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseVCFParser</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">CustomParser</span><span class="p">(</span><span class="n">BaseVCFParser</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_genotype</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">,</span> <span class="n">sample_idx</span><span class="p">):</span>
+        <span class="c1"># Your logic for extracting the genotype</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">has_variant</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">,</span> <span class="n">sample_idx</span><span class="p">):</span>
+        <span class="c1"># Your logic for determining if there is a variant</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">,</span> <span class="n">sample_idx</span><span class="p">):</span>
+        <span class="c1"># Your logic for extracting additional fields</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_record</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
+        <span class="c1"># Your logic for validating the record</span>
+        <span class="k">pass</span>
+
+<span class="c1"># Usage</span>
+<span class="n">annotator</span> <span class="o">=</span> <span class="n">STRAnnotator</span><span class="p">(</span><span class="s1">&#39;repeats.bed&#39;</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="n">CustomParser</span><span class="p">())</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting">
+<h3>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h3>
+<section id="issue-unnormalized-vcf">
+<h4>Issue: Unnormalized VCF<a class="headerlink" href="#issue-unnormalized-vcf" title="Link to this heading"></a></h4>
+<p>This tool <strong>only accepts normalized VCFs</strong>. Please normalize with <cite>bcftools</cite> before running.
+Example (produces a normalized, indexed VCF):</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Replace reference.fa with the exact reference used for the VCF</span>
+bcftools<span class="w"> </span>norm<span class="w"> </span>-f<span class="w"> </span>reference.fa<span class="w"> </span>-m<span class="w"> </span>input.vcf
+</pre></div>
+</div>
+</section>
+<section id="issue-unsorted-vcf">
+<h4>Issue: Unsorted VCF<a class="headerlink" href="#issue-unsorted-vcf" title="Link to this heading"></a></h4>
+<p>The tool automatically sorts the VCF in memory, but for large files pre-sorting is recommended:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bcftools<span class="w"> </span>sort<span class="w"> </span>input.vcf<span class="w"> </span>-o<span class="w"> </span>sorted.vcf
+</pre></div>
+</div>
+</section>
+<section id="issue-reference-mismatch">
+<h4>Issue: Reference mismatch<a class="headerlink" href="#issue-reference-mismatch" title="Link to this heading"></a></h4>
+<p>If you see warnings about a reference mismatch, check:</p>
+<ul class="simple">
+<li><p>The correctness of the STR BED file</p></li>
+<li><p>Matching reference genome versions</p></li>
+</ul>
+</section>
+</section>
+<section id="contributing">
+<h3>Contributing<a class="headerlink" href="#contributing" title="Link to this heading"></a></h3>
+<p>Contributions are welcome!
+For major changes, please open an issue first
+to discuss what you’d like to change.
+Please ensure:</p>
+<ol class="arabic simple">
+<li><p>All tests pass</p></li>
+<li><p>Code follows existing style</p></li>
+<li><p>New features include tests</p></li>
+<li><p>Documentation is updated</p></li>
+</ol>
+</section>
+<section id="license">
+<h3>License<a class="headerlink" href="#license" title="Link to this heading"></a></h3>
+<p>MIT License</p>
+</section>
+<section id="credits">
+<h3>Credits<a class="headerlink" href="#credits" title="Link to this heading"></a></h3>
+<p>Test bed files were taken from <cite>ConSTRain</cite> repository <cite>https://github.com/acg-team/ConSTRain</cite>.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="main.html" class="btn btn-neutral float-right" title="Main functionality" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Olesia Kondrateva.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

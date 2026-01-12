@@ -1,0 +1,557 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>strvcf_annotator.api &mdash; strvcf_annotator 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            strvcf_annotator
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../main.html">Main functionality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">Dev Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cli.html">Command-line interface</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">strvcf_annotator</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">strvcf_annotator.api</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for strvcf_annotator.api</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Library API for programmatic access to STR annotation functionality.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pysam</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.core.str_reference</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_str_reference</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.core.vcf_processor</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotate_vcf_to_file</span><span class="p">,</span> <span class="n">generate_annotated_records</span><span class="p">,</span> <span class="n">process_directory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.parsers.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseVCFParser</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.parsers.generic</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenericParser</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils.validation</span><span class="w"> </span><span class="kn">import</span> <span class="n">validate_directory_path</span><span class="p">,</span> <span class="n">validate_str_bed_file</span><span class="p">,</span> <span class="n">validate_vcf_file</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="STRAnnotator">
+<a class="viewcode-back" href="../../main.html#strvcf_annotator.api.STRAnnotator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">STRAnnotator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main class for STR annotation functionality.</span>
+
+<span class="sd">    Provides a high-level interface for annotating VCF files with STR</span>
+<span class="sd">    (Short Tandem Repeat) information. Supports both single file and</span>
+<span class="sd">    batch directory processing.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    str_bed_path : str</span>
+<span class="sd">        Path to BED file containing STR regions</span>
+<span class="sd">    parser : BaseVCFParser, optional</span>
+<span class="sd">        Custom parser for genotype extraction. Uses GenericParser if None.</span>
+<span class="sd">    somatic_mode : bool, optional</span>
+<span class="sd">        Enable somatic filtering. When ``True``, variants where all samples</span>
+<span class="sd">        have identical genotypes are skipped. If ``None``, the value set on</span>
+<span class="sd">        the annotator instance is used.</span>
+<span class="sd">    ignore_mismatch_warnings : bool, optional</span>
+<span class="sd">        If ``True``, suppress warnings about reference mismatches between</span>
+<span class="sd">        the STR panel sequence and the VCF ``REF`` allele. If ``None``,</span>
+<span class="sd">        the value set on the annotator instance is used.</span>
+<span class="sd">    mismatch_truth : str, optional</span>
+<span class="sd">        Specifies which source is treated as ground truth when a mismatch</span>
+<span class="sd">        between the STR panel and VCF ``REF`` allele is detected.</span>
+
+<span class="sd">        Allowed values are:</span>
+
+<span class="sd">        - ``&quot;panel&quot;``: trust the STR panel repeat sequence (default)</span>
+<span class="sd">        - ``&quot;vcf&quot;``: trust the VCF ``REF`` allele and patch the overlapping</span>
+<span class="sd">        panel sequence</span>
+<span class="sd">        - ``&quot;skip&quot;``: skip variants with mismatches entirely</span>
+
+<span class="sd">        If ``None``, the value set on the annotator instance is used.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    str_bed_path : str</span>
+<span class="sd">        Path to STR BED file</span>
+<span class="sd">    str_df : pd.DataFrame</span>
+<span class="sd">        Loaded STR reference data</span>
+<span class="sd">    parser : BaseVCFParser</span>
+<span class="sd">        Parser for genotype extraction</span>
+<span class="sd">    somatic_mode : bool</span>
+<span class="sd">        Whether somatic filtering is enabled</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; annotator = STRAnnotator(&#39;str_regions.bed&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; annotator.annotate_vcf_file(&#39;input.vcf&#39;, &#39;output.vcf&#39;)</span>
+
+<span class="sd">    &gt;&gt;&gt; # Batch process directory</span>
+<span class="sd">    &gt;&gt;&gt; annotator.process_directory(&#39;input_dir/&#39;, &#39;output_dir/&#39;)</span>
+
+<span class="sd">    &gt;&gt;&gt; # Stream processing</span>
+<span class="sd">    &gt;&gt;&gt; vcf_in = pysam.VariantFile(&#39;input.vcf&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; for record in annotator.annotate_vcf_stream(vcf_in):</span>
+<span class="sd">    ...     print(record.info[&#39;RU&#39;])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">str_bed_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">parser</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseVCFParser</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">somatic_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">ignore_mismatch_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">mismatch_truth</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;panel&quot;</span><span class="p">,</span>  <span class="c1"># &quot;panel&quot; | &quot;vcf&quot; | &quot;skip&quot;</span>
+    <span class="p">):</span>
+        <span class="n">validate_str_bed_file</span><span class="p">(</span><span class="n">str_bed_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">str_bed_path</span> <span class="o">=</span> <span class="n">str_bed_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">str_df</span> <span class="o">=</span> <span class="n">load_str_reference</span><span class="p">(</span><span class="n">str_bed_path</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">parser</span> <span class="k">if</span> <span class="n">parser</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">GenericParser</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">somatic_mode</span> <span class="o">=</span> <span class="n">somatic_mode</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_mismatch_warnings</span> <span class="o">=</span> <span class="n">ignore_mismatch_warnings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mismatch_truth</span> <span class="o">=</span> <span class="n">mismatch_truth</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">)</span><span class="si">}</span><span class="s2"> STR regions from </span><span class="si">{</span><span class="n">str_bed_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="STRAnnotator.annotate_vcf_file">
+<a class="viewcode-back" href="../../main.html#strvcf_annotator.api.STRAnnotator.annotate_vcf_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">annotate_vcf_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">input_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">somatic_mode</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ignore_mismatch_warnings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mismatch_truth</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Annotate a single VCF file with STR information.</span>
+
+<span class="sd">        This method reads a VCF file, annotates variants that overlap STR regions,</span>
+<span class="sd">        and writes the annotated records to an output VCF file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_path : str</span>
+<span class="sd">            Path to the input VCF file.</span>
+<span class="sd">        output_path : str</span>
+<span class="sd">            Path to the output annotated VCF file.</span>
+<span class="sd">        somatic_mode : bool, optional</span>
+<span class="sd">            Enable somatic filtering. When ``True``, variants where all samples</span>
+<span class="sd">            have identical genotypes are skipped. If ``None``, the value set on</span>
+<span class="sd">            the annotator instance is used.</span>
+<span class="sd">        ignore_mismatch_warnings : bool, optional</span>
+<span class="sd">            If ``True``, suppress warnings about reference mismatches between</span>
+<span class="sd">            the STR panel sequence and the VCF ``REF`` allele. If ``None``,</span>
+<span class="sd">            the value set on the annotator instance is used.</span>
+<span class="sd">        mismatch_truth : str, optional</span>
+<span class="sd">            Specifies which source is treated as ground truth when a mismatch</span>
+<span class="sd">            between the STR panel and VCF ``REF`` allele is detected.</span>
+
+<span class="sd">            Allowed values are:</span>
+
+<span class="sd">            - ``&quot;panel&quot;``: trust the STR panel repeat sequence (default)</span>
+<span class="sd">            - ``&quot;vcf&quot;``: trust the VCF ``REF`` allele and patch the overlapping</span>
+<span class="sd">            panel sequence</span>
+<span class="sd">            - ``&quot;skip&quot;``: skip variants with mismatches entirely</span>
+
+<span class="sd">            If ``None``, the value set on the annotator instance is used.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValidationError</span>
+<span class="sd">            If the input VCF file is invalid.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; annotator = STRAnnotator(&quot;str_regions.bed&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; annotator.annotate_vcf_file(&quot;input.vcf&quot;, &quot;output.vcf&quot;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Validate input</span>
+        <span class="n">validate_vcf_file</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
+        <span class="n">imw</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ignore_mismatch_warnings</span>
+            <span class="k">if</span> <span class="n">ignore_mismatch_warnings</span> <span class="ow">is</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">ignore_mismatch_warnings</span>
+        <span class="p">)</span>
+        <span class="n">mtruth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mismatch_truth</span> <span class="k">if</span> <span class="n">mismatch_truth</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">mismatch_truth</span>
+        <span class="n">smode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">somatic_mode</span> <span class="k">if</span> <span class="n">somatic_mode</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">somatic_mode</span>
+
+        <span class="c1"># Annotate</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Annotating </span><span class="si">{</span><span class="n">input_path</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+        <span class="n">annotate_vcf_to_file</span><span class="p">(</span>
+            <span class="n">input_path</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">,</span>
+            <span class="n">output_path</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="p">,</span>
+            <span class="n">somatic_mode</span><span class="o">=</span><span class="n">smode</span><span class="p">,</span>
+            <span class="n">ignore_mismatch_warnings</span><span class="o">=</span><span class="n">imw</span><span class="p">,</span>
+            <span class="n">mismatch_truth</span><span class="o">=</span><span class="n">mtruth</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Wrote annotated VCF to </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="STRAnnotator.annotate_vcf_stream">
+<a class="viewcode-back" href="../../main.html#strvcf_annotator.api.STRAnnotator.annotate_vcf_stream">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">annotate_vcf_stream</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">vcf_in</span><span class="p">:</span> <span class="n">pysam</span><span class="o">.</span><span class="n">VariantFile</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">somatic_mode</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ignore_mismatch_warnings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mismatch_truth</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">pysam</span><span class="o">.</span><span class="n">VariantRecord</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Annotate VCF records from an open stream.</span>
+
+<span class="sd">        This generator yields annotated VCF records from an already opened</span>
+<span class="sd">        ``pysam.VariantFile`` object. It is useful for streaming workflows</span>
+<span class="sd">        or custom processing pipelines.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        vcf_in : pysam.VariantFile</span>
+<span class="sd">            Open VCF file object to read variants from.</span>
+<span class="sd">        somatic_mode : bool, optional</span>
+<span class="sd">            Enable somatic filtering. When ``True``, variants where all samples</span>
+<span class="sd">            have identical genotypes are skipped. If ``None``, the value set on</span>
+<span class="sd">            the annotator instance is used.</span>
+<span class="sd">        ignore_mismatch_warnings : bool, optional</span>
+<span class="sd">            If ``True``, suppress warnings about reference mismatches between</span>
+<span class="sd">            the STR panel sequence and the VCF ``REF`` allele. If ``None``,</span>
+<span class="sd">            the value set on the annotator instance is used.</span>
+<span class="sd">        mismatch_truth : str, optional</span>
+<span class="sd">            Specifies which source is treated as ground truth when a mismatch</span>
+<span class="sd">            between the STR panel and VCF ``REF`` allele is detected.</span>
+
+<span class="sd">            Allowed values are:</span>
+
+<span class="sd">            - ``&quot;panel&quot;``: trust the STR panel repeat sequence (default)</span>
+<span class="sd">            - ``&quot;vcf&quot;``: trust the VCF ``REF`` allele and patch the overlapping</span>
+<span class="sd">            panel sequence</span>
+<span class="sd">            - ``&quot;skip&quot;``: skip variants with mismatches entirely</span>
+
+<span class="sd">            If ``None``, the value set on the annotator instance is used.</span>
+
+<span class="sd">        Yields</span>
+<span class="sd">        ------</span>
+<span class="sd">        pysam.VariantRecord</span>
+<span class="sd">            Annotated VCF records.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; annotator = STRAnnotator(&quot;str_regions.bed&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; vcf_in = pysam.VariantFile(&quot;input.vcf&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; for record in annotator.annotate_vcf_stream(vcf_in):</span>
+<span class="sd">        ...     print(record.info[&quot;RU&quot;])</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">imw</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ignore_mismatch_warnings</span>
+            <span class="k">if</span> <span class="n">ignore_mismatch_warnings</span> <span class="ow">is</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">ignore_mismatch_warnings</span>
+        <span class="p">)</span>
+        <span class="n">mtruth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mismatch_truth</span> <span class="k">if</span> <span class="n">mismatch_truth</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">mismatch_truth</span>
+        <span class="n">smode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">somatic_mode</span> <span class="k">if</span> <span class="n">somatic_mode</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">somatic_mode</span>
+
+        <span class="k">yield from</span> <span class="n">generate_annotated_records</span><span class="p">(</span>
+            <span class="n">vcf_in</span><span class="o">=</span><span class="n">vcf_in</span><span class="p">,</span>
+            <span class="n">str_df</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">,</span>
+            <span class="n">parser</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="p">,</span>
+            <span class="n">somatic_mode</span><span class="o">=</span><span class="n">smode</span><span class="p">,</span>
+            <span class="n">ignore_mismatch_warnings</span><span class="o">=</span><span class="n">imw</span><span class="p">,</span>
+            <span class="n">mismatch_truth</span><span class="o">=</span><span class="n">mtruth</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="STRAnnotator.process_directory">
+<a class="viewcode-back" href="../../main.html#strvcf_annotator.api.STRAnnotator.process_directory">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">process_directory</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">input_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">output_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">somatic_mode</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ignore_mismatch_warnings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mismatch_truth</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Batch process a directory of VCF files.</span>
+
+<span class="sd">        This method processes all VCF files in the input directory and writes</span>
+<span class="sd">        annotated versions to the output directory. Files that have already</span>
+<span class="sd">        been processed are skipped automatically.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_dir : str</span>
+<span class="sd">            Directory containing input VCF files.</span>
+<span class="sd">        output_dir : str</span>
+<span class="sd">            Directory where annotated VCF files will be written. The directory</span>
+<span class="sd">            is created if it does not already exist.</span>
+<span class="sd">        somatic_mode : bool, optional</span>
+<span class="sd">            Enable somatic filtering. When ``True``, variants where all samples</span>
+<span class="sd">            have identical genotypes are skipped. If ``None``, the value set on</span>
+<span class="sd">            the annotator instance is used.</span>
+<span class="sd">        ignore_mismatch_warnings : bool, optional</span>
+<span class="sd">            If ``True``, suppress warnings about reference mismatches between</span>
+<span class="sd">            the STR panel sequence and the VCF ``REF`` allele. If ``None``,</span>
+<span class="sd">            the value set on the annotator instance is used.</span>
+<span class="sd">        mismatch_truth : str, optional</span>
+<span class="sd">            Specifies which source is treated as ground truth when a mismatch</span>
+<span class="sd">            between the STR panel and VCF ``REF`` allele is detected.</span>
+
+<span class="sd">            Allowed values are:</span>
+
+<span class="sd">            - ``&quot;panel&quot;``: trust the STR panel repeat sequence (default)</span>
+<span class="sd">            - ``&quot;vcf&quot;``: trust the VCF ``REF`` allele and patch the overlapping</span>
+<span class="sd">            panel sequence</span>
+<span class="sd">            - ``&quot;skip&quot;``: skip variants with mismatches entirely</span>
+
+<span class="sd">            If ``None``, the value set on the annotator instance is used.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValidationError</span>
+<span class="sd">            If the input directory is invalid.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; annotator = STRAnnotator(&quot;str_regions.bed&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; annotator.process_directory(&quot;vcf_files/&quot;, &quot;annotated_vcfs/&quot;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Validate directories</span>
+        <span class="n">validate_directory_path</span><span class="p">(</span><span class="n">input_dir</span><span class="p">,</span> <span class="n">must_exist</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">validate_directory_path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">must_exist</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">create</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">imw</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ignore_mismatch_warnings</span>
+            <span class="k">if</span> <span class="n">ignore_mismatch_warnings</span> <span class="ow">is</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">ignore_mismatch_warnings</span>
+        <span class="p">)</span>
+        <span class="n">mtruth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mismatch_truth</span> <span class="k">if</span> <span class="n">mismatch_truth</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">mismatch_truth</span>
+        <span class="n">smode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">somatic_mode</span> <span class="k">if</span> <span class="n">somatic_mode</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">somatic_mode</span>
+        <span class="c1"># Process directory</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing VCF files in </span><span class="si">{</span><span class="n">input_dir</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+        <span class="n">process_directory</span><span class="p">(</span>
+            <span class="n">input_dir</span><span class="o">=</span><span class="n">input_dir</span><span class="p">,</span>
+            <span class="n">str_bed_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">str_bed_path</span><span class="p">,</span>
+            <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">,</span>
+            <span class="n">parser</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="p">,</span>
+            <span class="n">somatic_mode</span><span class="o">=</span><span class="n">smode</span><span class="p">,</span>
+            <span class="n">ignore_mismatch_warnings</span><span class="o">=</span><span class="n">imw</span><span class="p">,</span>
+            <span class="n">mismatch_truth</span><span class="o">=</span><span class="n">mtruth</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Batch processing complete. Output in </span><span class="si">{</span><span class="n">output_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="STRAnnotator.get_str_at_position">
+<a class="viewcode-back" href="../../main.html#strvcf_annotator.api.STRAnnotator.get_str_at_position">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_str_at_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chrom</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get STR region at specific genomic position.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        chrom : str</span>
+<span class="sd">            Chromosome name</span>
+<span class="sd">        pos : int</span>
+<span class="sd">            Genomic position (1-based)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Optional[dict]</span>
+<span class="sd">            STR region data if position is within an STR, None otherwise</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; annotator = STRAnnotator(&#39;str_regions.bed&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; str_region = annotator.get_str_at_position(&#39;chr1&#39;, 1000000)</span>
+<span class="sd">        &gt;&gt;&gt; if str_region:</span>
+<span class="sd">        ...     print(f&quot;Repeat unit: {str_region[&#39;RU&#39;]}&quot;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.core.str_reference</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_str_at_position</span>
+
+        <span class="k">return</span> <span class="n">get_str_at_position</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">,</span> <span class="n">chrom</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="STRAnnotator.get_statistics">
+<a class="viewcode-back" href="../../main.html#strvcf_annotator.api.STRAnnotator.get_statistics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_statistics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get statistics about loaded STR regions.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+<span class="sd">            Statistics including total regions, chromosomes, repeat units</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; annotator = STRAnnotator(&#39;str_regions.bed&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; stats = annotator.get_statistics()</span>
+<span class="sd">        &gt;&gt;&gt; print(f&quot;Total STR regions: {stats[&#39;total_regions&#39;]}&quot;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">stats</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;total_regions&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">),</span>
+            <span class="s2">&quot;chromosomes&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">[</span><span class="s2">&quot;CHROM&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">nunique</span><span class="p">(),</span>
+            <span class="s2">&quot;unique_repeat_units&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">[</span><span class="s2">&quot;RU&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">nunique</span><span class="p">(),</span>
+            <span class="s2">&quot;period_distribution&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">[</span><span class="s2">&quot;PERIOD&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+            <span class="s2">&quot;mean_repeat_count&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">[</span><span class="s2">&quot;COUNT&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span>
+            <span class="s2">&quot;median_repeat_count&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">[</span><span class="s2">&quot;COUNT&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">median</span><span class="p">(),</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">stats</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="annotate_vcf">
+<a class="viewcode-back" href="../../main.html#strvcf_annotator.api.annotate_vcf">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">annotate_vcf</span><span class="p">(</span>
+    <span class="n">input_vcf</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">str_bed</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">output_vcf</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">parser</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseVCFParser</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">somatic_mode</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">ignore_mismatch_warnings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">mismatch_truth</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convenience function for single VCF annotation.</span>
+
+<span class="sd">    This is a simplified functional interface for annotating a single VCF</span>
+<span class="sd">    file with STR information, without explicitly creating an</span>
+<span class="sd">    :class:`STRAnnotator` instance.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    input_vcf : str</span>
+<span class="sd">        Path to the input VCF file.</span>
+<span class="sd">    str_bed : str</span>
+<span class="sd">        Path to the STR BED file.</span>
+<span class="sd">    output_vcf : str</span>
+<span class="sd">        Path to the output annotated VCF file.</span>
+<span class="sd">    parser : BaseVCFParser, optional</span>
+<span class="sd">        Custom parser for genotype extraction. If not provided,</span>
+<span class="sd">        :class:`GenericParser` is used.</span>
+<span class="sd">    somatic_mode : bool, optional</span>
+<span class="sd">        Enable somatic filtering. When ``True``, variants where all samples</span>
+<span class="sd">        have identical genotypes are skipped. If ``None``, the default</span>
+<span class="sd">        behavior is used.</span>
+<span class="sd">    ignore_mismatch_warnings : bool, optional</span>
+<span class="sd">        If ``True``, suppress warnings about reference mismatches between</span>
+<span class="sd">        the STR panel sequence and the VCF ``REF`` allele. If ``None``,</span>
+<span class="sd">        the default behavior is used.</span>
+<span class="sd">    mismatch_truth : str, optional</span>
+<span class="sd">        Specifies which source is treated as ground truth when a mismatch</span>
+<span class="sd">        between the STR panel and the VCF ``REF`` allele is detected.</span>
+
+<span class="sd">        Allowed values are:</span>
+
+<span class="sd">        - ``&quot;panel&quot;``: trust the STR panel repeat sequence (default)</span>
+<span class="sd">        - ``&quot;vcf&quot;``: trust the VCF ``REF`` allele and patch the overlapping</span>
+<span class="sd">          panel sequence</span>
+<span class="sd">        - ``&quot;skip&quot;``: skip variants with mismatches entirely</span>
+
+<span class="sd">        If ``None``, the default behavior is used.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from strvcf_annotator import annotate_vcf</span>
+<span class="sd">    &gt;&gt;&gt; annotate_vcf(&quot;input.vcf&quot;, &quot;str_regions.bed&quot;, &quot;output.vcf&quot;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">annotator</span> <span class="o">=</span> <span class="n">STRAnnotator</span><span class="p">(</span><span class="n">str_bed</span><span class="p">,</span> <span class="n">parser</span><span class="p">)</span>
+    <span class="n">annotator</span><span class="o">.</span><span class="n">annotate_vcf_file</span><span class="p">(</span>
+        <span class="n">input_vcf</span><span class="p">,</span>
+        <span class="n">output_vcf</span><span class="p">,</span>
+        <span class="n">somatic_mode</span><span class="o">=</span><span class="n">somatic_mode</span><span class="p">,</span>
+        <span class="n">ignore_mismatch_warnings</span><span class="o">=</span><span class="n">ignore_mismatch_warnings</span><span class="p">,</span>
+        <span class="n">mismatch_truth</span><span class="o">=</span><span class="n">mismatch_truth</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Olesia Kondrateva.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

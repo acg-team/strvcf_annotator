@@ -1,0 +1,281 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>strvcf_annotator.utils.vcf_utils &mdash; strvcf_annotator 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            strvcf_annotator
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../main.html">Main functionality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Dev Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cli.html">Command-line interface</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">strvcf_annotator</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">strvcf_annotator.utils.vcf_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for strvcf_annotator.utils.vcf_utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Utility functions for VCF processing.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pysam</span>
+
+
+<div class="viewcode-block" id="chrom_to_order">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.utils.vcf_utils.chrom_to_order">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">chrom_to_order</span><span class="p">(</span><span class="n">chrom</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Map chromosome names like &#39;chr1&#39;, &#39;chrX&#39;, &#39;1&#39; to an integer order</span>
+<span class="sd">    so that sorting is: 1,2,...,22,X,Y,M/MT,others.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">chrom</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">1_000_000</span>
+
+    <span class="n">s</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">chrom</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;chr&quot;</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span>
+
+    <span class="c1"># Numeric autosomes</span>
+    <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+
+    <span class="c1"># Common non-numeric chromosomes</span>
+    <span class="k">if</span> <span class="n">s</span> <span class="o">==</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">23</span>
+    <span class="k">if</span> <span class="n">s</span> <span class="o">==</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">24</span>
+    <span class="k">if</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;m&quot;</span><span class="p">,</span> <span class="s2">&quot;mt&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mi">25</span>
+
+    <span class="c1"># Anything else gets pushed to the end</span>
+    <span class="k">return</span> <span class="mi">1_000_000</span></div>
+
+
+
+<div class="viewcode-block" id="normalize_info_fields">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.utils.vcf_utils.normalize_info_fields">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">normalize_info_fields</span><span class="p">(</span>
+    <span class="n">record</span><span class="p">:</span> <span class="n">pysam</span><span class="o">.</span><span class="n">VariantRecord</span><span class="p">,</span> <span class="n">header</span><span class="p">:</span> <span class="n">pysam</span><span class="o">.</span><span class="n">VariantHeader</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalize INFO fields for proper VCF serialization.</span>
+
+<span class="sd">    Handles various INFO field types and ensures they are properly formatted</span>
+<span class="sd">    for writing to VCF files. Handles Flags, Strings, and R-type fields specially.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    record : pysam.VariantRecord</span>
+<span class="sd">        VCF record with INFO fields to normalize</span>
+<span class="sd">    header : pysam.VariantHeader</span>
+<span class="sd">        VCF header with field definitions</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Dict[str, Any]</span>
+<span class="sd">        Normalized INFO fields ready for VCF writing</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    - Flag fields are included only if True</span>
+<span class="sd">    - String fields with multiple values are joined with &quot;|&quot;</span>
+<span class="sd">    - R-type fields (REF + ALT) are clipped to first 2 values</span>
+<span class="sd">    - Unknown fields are skipped</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">fixed_info</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">record</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">header</span><span class="o">.</span><span class="n">info</span><span class="p">:</span>
+            <span class="k">continue</span>  <span class="c1"># Skip unknown fields</span>
+
+        <span class="n">desc</span> <span class="o">=</span> <span class="n">header</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+        <span class="c1"># Handle Flags (should be included as key only if present)</span>
+        <span class="k">if</span> <span class="n">desc</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;Flag&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">val</span><span class="p">:</span>
+                <span class="n">fixed_info</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Handle single String field (but given as tuple or list)</span>
+        <span class="k">if</span> <span class="n">desc</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;String&quot;</span> <span class="ow">and</span> <span class="n">desc</span><span class="o">.</span><span class="n">number</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+                <span class="n">fixed_info</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">val</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fixed_info</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Handle single Integer/Float field (but given as tuple or list)</span>
+        <span class="k">if</span> <span class="n">desc</span><span class="o">.</span><span class="n">number</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="n">fixed_info</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Clip R fields (REF + ALT)</span>
+        <span class="k">if</span> <span class="n">desc</span><span class="o">.</span><span class="n">number</span> <span class="o">==</span> <span class="s2">&quot;R&quot;</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="n">fixed_info</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">val</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Pass through other values</span>
+        <span class="n">fixed_info</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="k">return</span> <span class="n">fixed_info</span></div>
+
+
+
+<div class="viewcode-block" id="get_sample_by_name">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.utils.vcf_utils.get_sample_by_name">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_sample_by_name</span><span class="p">(</span><span class="n">record</span><span class="p">:</span> <span class="n">pysam</span><span class="o">.</span><span class="n">VariantRecord</span><span class="p">,</span> <span class="n">sample_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get sample data by name from VCF record.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    record : pysam.VariantRecord</span>
+<span class="sd">        VCF record</span>
+<span class="sd">    sample_name : str</span>
+<span class="sd">        Name of sample to retrieve</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Any</span>
+<span class="sd">        Sample data object</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    KeyError</span>
+<span class="sd">        If sample name not found in record</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">record</span><span class="o">.</span><span class="n">samples</span><span class="p">[</span><span class="n">sample_name</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="get_sample_by_index">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.utils.vcf_utils.get_sample_by_index">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_sample_by_index</span><span class="p">(</span><span class="n">record</span><span class="p">:</span> <span class="n">pysam</span><span class="o">.</span><span class="n">VariantRecord</span><span class="p">,</span> <span class="n">sample_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get sample data by index from VCF record.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    record : pysam.VariantRecord</span>
+<span class="sd">        VCF record</span>
+<span class="sd">    sample_idx : int</span>
+<span class="sd">        Index of sample to retrieve</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Any</span>
+<span class="sd">        Sample data object</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    IndexError</span>
+<span class="sd">        If sample index out of range</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">samples</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">samples</span><span class="p">[</span><span class="n">sample_idx</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="has_format_field">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.utils.vcf_utils.has_format_field">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">has_format_field</span><span class="p">(</span><span class="n">record</span><span class="p">:</span> <span class="n">pysam</span><span class="o">.</span><span class="n">VariantRecord</span><span class="p">,</span> <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if FORMAT field exists in any sample.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    record : pysam.VariantRecord</span>
+<span class="sd">        VCF record</span>
+<span class="sd">    field_name : str</span>
+<span class="sd">        Name of FORMAT field to check</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        True if field exists in at least one sample</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">field_name</span> <span class="ow">in</span> <span class="n">sample</span> <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">record</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Olesia Kondrateva.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

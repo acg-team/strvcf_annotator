@@ -1,0 +1,441 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>strvcf_annotator.core.repeat_utils &mdash; strvcf_annotator 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            strvcf_annotator
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../main.html">Main functionality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Dev Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cli.html">Command-line interface</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">strvcf_annotator</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">strvcf_annotator.core.repeat_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for strvcf_annotator.core.repeat_utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Utilities for repeat sequence operations.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+
+<div class="viewcode-block" id="extract_repeat_sequence">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.repeat_utils.extract_repeat_sequence">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_repeat_sequence</span><span class="p">(</span><span class="n">str_row</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reconstruct repeat sequence from STR metadata.</span>
+
+<span class="sd">    Generates the full repeat sequence by repeating the repeat unit (RU)</span>
+<span class="sd">    the calculated number of times (COUNT).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    str_row : Dict or pd.Series</span>
+<span class="sd">        STR region data containing &#39;RU&#39; (repeat unit) and &#39;COUNT&#39; (number of repeats)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        Full repeat sequence</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; str_row = {&#39;RU&#39;: &#39;CAG&#39;, &#39;COUNT&#39;: 5}</span>
+<span class="sd">    &gt;&gt;&gt; extract_repeat_sequence(str_row)</span>
+<span class="sd">    &#39;CAGCAGCAGCAGCAG&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">str_row</span><span class="p">[</span><span class="s2">&quot;RU&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">str_row</span><span class="p">[</span><span class="s2">&quot;COUNT&quot;</span><span class="p">])</span></div>
+
+
+
+<div class="viewcode-block" id="count_repeat_units">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.repeat_utils.count_repeat_units">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">count_repeat_units</span><span class="p">(</span><span class="n">sequence</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">motif</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the longest contiguous run of `motif` in `sequence`.</span>
+
+<span class="sd">    The function looks for exact, non-overlapping copies of `motif` that occur</span>
+<span class="sd">    consecutively and returns the maximum number of such copies in any run.</span>
+
+<span class="sd">    This corresponds to how STR repeat counts are typically defined: the</span>
+<span class="sd">    length of the longest perfect contiguous block of the repeat unit.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sequence : str</span>
+<span class="sd">        DNA sequence to search.</span>
+<span class="sd">    motif : str</span>
+<span class="sd">        Repeat unit motif to count (e.g. &#39;A&#39;, &#39;CAG&#39;).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    int</span>
+<span class="sd">        Length of the longest contiguous run of `motif` in `sequence`.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If `motif` is empty or if either argument is not a string.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Perfect repeats</span>
+<span class="sd">    ~~~~~~~~~~~~~~~</span>
+<span class="sd">    &gt;&gt;&gt; count_repeat_units(&quot;CAGCAGCAG&quot;, &quot;CAG&quot;)</span>
+<span class="sd">    3</span>
+
+<span class="sd">    Imperfect tail</span>
+<span class="sd">    ~~~~~~~~~~~~~~</span>
+<span class="sd">    &gt;&gt;&gt; count_repeat_units(&quot;CAGCAGCA&quot;, &quot;CAG&quot;)</span>
+<span class="sd">    2</span>
+
+<span class="sd">    No repeats</span>
+<span class="sd">    ~~~~~~~~~~</span>
+<span class="sd">    &gt;&gt;&gt; count_repeat_units(&quot;ATCG&quot;, &quot;CAG&quot;)</span>
+<span class="sd">    0</span>
+
+<span class="sd">    Homopolymer runs</span>
+<span class="sd">    ~~~~~~~~~~~~~~~~</span>
+<span class="sd">    &gt;&gt;&gt; count_repeat_units(&quot;ATAAAAA&quot;, &quot;A&quot;)</span>
+<span class="sd">    5</span>
+<span class="sd">    &gt;&gt;&gt; count_repeat_units(&quot;AAAATAAA&quot;, &quot;A&quot;)</span>
+<span class="sd">    4  # longest contiguous run is &#39;AAAA&#39;</span>
+
+<span class="sd">    Overlapping motifs</span>
+<span class="sd">    ~~~~~~~~~~~~~~~~~~</span>
+<span class="sd">    &#39;AAAA&#39; with motif &#39;AA&#39; contains two non-overlapping copies: &#39;AA&#39; &#39;AA&#39;</span>
+<span class="sd">    &gt;&gt;&gt; count_repeat_units(&quot;AAAA&quot;, &quot;AA&quot;)</span>
+<span class="sd">    2</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Basic type and value validation</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;sequence&#39; must be a string, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">motif</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;motif&#39; must be a string, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">motif</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">motif</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&#39;motif&#39; must be a non-empty string&quot;</span><span class="p">)</span>
+
+    <span class="n">mlen</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">motif</span><span class="p">)</span>
+    <span class="n">slen</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">mlen</span> <span class="o">&gt;</span> <span class="n">slen</span> <span class="ow">or</span> <span class="n">slen</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="n">max_run</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">slen</span> <span class="o">-</span> <span class="n">mlen</span><span class="p">:</span>
+        <span class="c1"># Check if a run starts at position i</span>
+        <span class="k">if</span> <span class="n">sequence</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">mlen</span><span class="p">]</span> <span class="o">==</span> <span class="n">motif</span><span class="p">:</span>
+            <span class="n">run_length</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">j</span> <span class="o">=</span> <span class="n">i</span>
+            <span class="c1"># Count how many contiguous motif copies we have from position i</span>
+            <span class="k">while</span> <span class="n">j</span> <span class="o">&lt;=</span> <span class="n">slen</span> <span class="o">-</span> <span class="n">mlen</span> <span class="ow">and</span> <span class="n">sequence</span><span class="p">[</span><span class="n">j</span> <span class="p">:</span> <span class="n">j</span> <span class="o">+</span> <span class="n">mlen</span><span class="p">]</span> <span class="o">==</span> <span class="n">motif</span><span class="p">:</span>
+                <span class="n">run_length</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">j</span> <span class="o">+=</span> <span class="n">mlen</span>
+
+            <span class="k">if</span> <span class="n">run_length</span> <span class="o">&gt;</span> <span class="n">max_run</span><span class="p">:</span>
+                <span class="n">max_run</span> <span class="o">=</span> <span class="n">run_length</span>
+
+            <span class="c1"># Skip past this entire run</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">j</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">return</span> <span class="n">max_run</span></div>
+
+
+
+<div class="viewcode-block" id="normalize_variant">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.repeat_utils.normalize_variant">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">normalize_variant</span><span class="p">(</span><span class="n">pos</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">alt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Locally normalize (pos, ref, alt) by trimming shared prefix/suffix.</span>
+
+<span class="sd">    - pos is 1-based VCF coordinate.</span>
+<span class="sd">    - Trimming is case-insensitive.</span>
+<span class="sd">    - We always keep at least 1 base in ref and alt if they differ.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    new_pos, new_ref, new_alt</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># early exit: identical → no-op</span>
+    <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="n">alt</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">pos</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">alt</span>
+
+    <span class="n">r</span> <span class="o">=</span> <span class="n">ref</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">alt</span>
+
+    <span class="c1"># trim common prefix</span>
+    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="n">pos</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="c1"># trim common suffix</span>
+    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">r</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="n">a</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">r</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">a</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">pos</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">a</span></div>
+
+
+
+<div class="viewcode-block" id="apply_variant_to_repeat">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.repeat_utils.apply_variant_to_repeat">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">apply_variant_to_repeat</span><span class="p">(</span>
+    <span class="n">pos</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">alt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repeat_start</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">repeat_seq</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Apply a variant to an STR repeat sequence.</span>
+
+<span class="sd">    The function applies a VCF variant to a reference STR sequence while</span>
+<span class="sd">    respecting VCF normalization rules and STR boundaries.</span>
+
+<span class="sd">    The algorithm works as follows:</span>
+
+<span class="sd">    1. Normalize ``pos``, ``ref``, and ``alt`` by trimming shared</span>
+<span class="sd">       prefixes and suffixes.</span>
+<span class="sd">    2. If the normalized variant lies fully inside the STR region,</span>
+<span class="sd">       apply the full ``ALT`` allele.</span>
+<span class="sd">    3. If the variant partially overlaps the STR region:</span>
+
+<span class="sd">       - **SNP-like** variants (``len(ref) == len(alt)``) are aligned</span>
+<span class="sd">         positionally.</span>
+<span class="sd">       - **Indel-like** variants (``len(ref) != len(alt)``) use the</span>
+<span class="sd">         suffix of ``ALT`` that overlaps the STR.</span>
+
+<span class="sd">    Any parts of the variant outside the STR window are ignored.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The genomic reference is conceptually treated as::</span>
+
+<span class="sd">        repeat_seq + UNKNOWN_SUFFIX</span>
+
+<span class="sd">    Differences outside the STR window do not affect the resulting</span>
+<span class="sd">    mutated STR sequence.</span>
+
+<span class="sd">    Case handling rules:</span>
+
+<span class="sd">    - All matching and overlap logic is case-insensitive.</span>
+<span class="sd">    - Output case follows the overlapping STR segment:</span>
+
+<span class="sd">      - lowercase STR slice → lowercase ALT</span>
+<span class="sd">      - uppercase STR slice → uppercase ALT</span>
+<span class="sd">      - mixed case → ALT is left unchanged</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pos : int</span>
+<span class="sd">        Variant position (1-based VCF coordinate).</span>
+<span class="sd">    ref : str</span>
+<span class="sd">        Reference allele from the VCF record.</span>
+<span class="sd">    alt : str</span>
+<span class="sd">        Alternate allele from the VCF record.</span>
+<span class="sd">    repeat_start : int</span>
+<span class="sd">        Start position of the STR region (1-based).</span>
+<span class="sd">    repeat_seq : str</span>
+<span class="sd">        Reference STR sequence from the panel.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The mutated STR sequence after applying the variant.</span>
+<span class="sd">        If the variant does not overlap the STR region, the original</span>
+<span class="sd">        ``repeat_seq`` is returned unchanged.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">repeat_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">repeat_seq</span><span class="p">)</span>
+
+    <span class="c1"># --- 1) Normalize variant locally ---</span>
+    <span class="n">pos</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">alt</span> <span class="o">=</span> <span class="n">normalize_variant</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">alt</span><span class="p">)</span>
+
+    <span class="c1"># After normalization, if ref == alt, nothing to do for the STR</span>
+    <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="n">alt</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">repeat_seq</span>
+
+    <span class="n">repeat_end</span> <span class="o">=</span> <span class="n">repeat_start</span> <span class="o">+</span> <span class="n">repeat_len</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">var_start</span> <span class="o">=</span> <span class="n">pos</span>
+    <span class="n">var_end</span> <span class="o">=</span> <span class="n">pos</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>  <span class="c1"># inclusive</span>
+
+    <span class="c1"># --- 2) No overlap with STR ---</span>
+    <span class="k">if</span> <span class="n">var_end</span> <span class="o">&lt;</span> <span class="n">repeat_start</span> <span class="ow">or</span> <span class="n">var_start</span> <span class="o">&gt;</span> <span class="n">repeat_end</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">repeat_seq</span>
+
+    <span class="c1"># --- 3) Variant fully inside STR: apply full ALT (insertions/deletions kept) ---</span>
+    <span class="k">if</span> <span class="n">var_start</span> <span class="o">&gt;=</span> <span class="n">repeat_start</span> <span class="ow">and</span> <span class="n">var_end</span> <span class="o">&lt;=</span> <span class="n">repeat_end</span><span class="p">:</span>
+        <span class="n">relative_pos</span> <span class="o">=</span> <span class="n">var_start</span> <span class="o">-</span> <span class="n">repeat_start</span>  <span class="c1"># 0-based offset within repeat_seq</span>
+        <span class="n">before</span> <span class="o">=</span> <span class="n">repeat_seq</span><span class="p">[:</span><span class="n">relative_pos</span><span class="p">]</span>
+        <span class="n">after</span> <span class="o">=</span> <span class="n">repeat_seq</span><span class="p">[</span><span class="n">relative_pos</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span> <span class="p">:]</span>
+
+        <span class="n">panel_slice</span> <span class="o">=</span> <span class="n">repeat_seq</span><span class="p">[</span><span class="n">relative_pos</span> <span class="p">:</span> <span class="n">relative_pos</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">ref</span><span class="p">)]</span>
+
+        <span class="c1"># Case-normalize ALT to match panel_slice</span>
+        <span class="n">alt_adj</span> <span class="o">=</span> <span class="n">alt</span>
+        <span class="k">if</span> <span class="n">panel_slice</span><span class="o">.</span><span class="n">islower</span><span class="p">():</span>
+            <span class="n">alt_adj</span> <span class="o">=</span> <span class="n">alt</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">panel_slice</span><span class="o">.</span><span class="n">isupper</span><span class="p">():</span>
+            <span class="n">alt_adj</span> <span class="o">=</span> <span class="n">alt</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">before</span> <span class="o">+</span> <span class="n">alt_adj</span> <span class="o">+</span> <span class="n">after</span>
+
+    <span class="c1"># --- 4) Partial overlap with STR (starts before and/or ends after) ---</span>
+    <span class="c1"># Compute overlap region in reference coordinates.</span>
+    <span class="n">overlap_start</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">repeat_start</span><span class="p">,</span> <span class="n">var_start</span><span class="p">)</span>
+    <span class="n">overlap_end</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">repeat_end</span><span class="p">,</span> <span class="n">var_end</span><span class="p">)</span>
+    <span class="n">overlap_len</span> <span class="o">=</span> <span class="n">overlap_end</span> <span class="o">-</span> <span class="n">overlap_start</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="c1"># Position inside the STR where overlap begins (0-based)</span>
+    <span class="n">relative_pos</span> <span class="o">=</span> <span class="n">overlap_start</span> <span class="o">-</span> <span class="n">repeat_start</span>
+
+    <span class="c1"># Extract ALT substring corresponding to overlapping bases.</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">alt</span><span class="p">):</span>
+        <span class="c1"># SNP-like: align by position (same offset as ref)</span>
+        <span class="n">i0</span> <span class="o">=</span> <span class="n">overlap_start</span> <span class="o">-</span> <span class="n">var_start</span>
+        <span class="n">alt_overlap_raw</span> <span class="o">=</span> <span class="n">alt</span><span class="p">[</span><span class="n">i0</span> <span class="p">:</span> <span class="n">i0</span> <span class="o">+</span> <span class="n">overlap_len</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Indel-like: align from the end of ALT so that the last base of ALT</span>
+        <span class="c1"># corresponds to the last overlapping base of REF.</span>
+
+        <span class="c1"># ALT shorter or equal: use entire ALT</span>
+        <span class="c1"># Use only the suffix of ALT that covers the overlapping segment</span>
+        <span class="n">alt_overlap_raw</span> <span class="o">=</span> <span class="n">alt</span> <span class="k">if</span> <span class="n">overlap_len</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">alt</span><span class="p">)</span> <span class="k">else</span> <span class="n">alt</span><span class="p">[</span><span class="o">-</span><span class="n">overlap_len</span><span class="p">:]</span>
+
+    <span class="n">panel_slice</span> <span class="o">=</span> <span class="n">repeat_seq</span><span class="p">[</span><span class="n">relative_pos</span> <span class="p">:</span> <span class="n">relative_pos</span> <span class="o">+</span> <span class="n">overlap_len</span><span class="p">]</span>
+
+    <span class="c1"># Case-normalize ALT overlap to match panel_slice</span>
+    <span class="k">if</span> <span class="n">panel_slice</span><span class="o">.</span><span class="n">islower</span><span class="p">():</span>
+        <span class="n">alt_overlap</span> <span class="o">=</span> <span class="n">alt_overlap_raw</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">panel_slice</span><span class="o">.</span><span class="n">isupper</span><span class="p">():</span>
+        <span class="n">alt_overlap</span> <span class="o">=</span> <span class="n">alt_overlap_raw</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">alt_overlap</span> <span class="o">=</span> <span class="n">alt_overlap_raw</span>
+
+    <span class="n">before_mut</span> <span class="o">=</span> <span class="n">repeat_seq</span><span class="p">[:</span><span class="n">relative_pos</span><span class="p">]</span>
+    <span class="n">after_mut</span> <span class="o">=</span> <span class="n">repeat_seq</span><span class="p">[</span><span class="n">relative_pos</span> <span class="o">+</span> <span class="n">overlap_len</span> <span class="p">:]</span>
+
+    <span class="n">mutated</span> <span class="o">=</span> <span class="n">before_mut</span> <span class="o">+</span> <span class="n">alt_overlap</span> <span class="o">+</span> <span class="n">after_mut</span>
+    <span class="k">return</span> <span class="n">mutated</span></div>
+
+
+
+<div class="viewcode-block" id="is_perfect_repeat">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.repeat_utils.is_perfect_repeat">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_perfect_repeat</span><span class="p">(</span><span class="n">sequence</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">motif</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if sequence is a perfect repeat of the motif.</span>
+
+<span class="sd">    A perfect repeat means the sequence consists entirely of exact copies</span>
+<span class="sd">    of the motif with no interruptions or variations.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sequence : str</span>
+<span class="sd">        DNA sequence to check</span>
+<span class="sd">    motif : str</span>
+<span class="sd">        Repeat unit motif</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        True if sequence is a perfect repeat, False otherwise</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; is_perfect_repeat(&#39;CAGCAGCAG&#39;, &#39;CAG&#39;)</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; is_perfect_repeat(&#39;CAGCAGCA&#39;, &#39;CAG&#39;)</span>
+<span class="sd">    False</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">sequence</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">motif</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="n">count</span> <span class="o">=</span> <span class="n">count_repeat_units</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">motif</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sequence</span> <span class="o">==</span> <span class="n">motif</span> <span class="o">*</span> <span class="n">count</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Olesia Kondrateva.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

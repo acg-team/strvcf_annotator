@@ -1,0 +1,437 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Main functionality &mdash; strvcf_annotator 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e259d695"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Dev Documentation" href="api.html" />
+    <link rel="prev" title="strvcf_annotator documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            strvcf_annotator
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Main functionality</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#strvcf_annotator.api.STRAnnotator"><code class="docutils literal notranslate"><span class="pre">STRAnnotator</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.api.STRAnnotator.str_bed_path"><code class="docutils literal notranslate"><span class="pre">STRAnnotator.str_bed_path</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.api.STRAnnotator.str_df"><code class="docutils literal notranslate"><span class="pre">STRAnnotator.str_df</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.api.STRAnnotator.parser"><code class="docutils literal notranslate"><span class="pre">STRAnnotator.parser</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.api.STRAnnotator.somatic_mode"><code class="docutils literal notranslate"><span class="pre">STRAnnotator.somatic_mode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.api.STRAnnotator.annotate_vcf_file"><code class="docutils literal notranslate"><span class="pre">STRAnnotator.annotate_vcf_file()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.api.STRAnnotator.annotate_vcf_stream"><code class="docutils literal notranslate"><span class="pre">STRAnnotator.annotate_vcf_stream()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.api.STRAnnotator.process_directory"><code class="docutils literal notranslate"><span class="pre">STRAnnotator.process_directory()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.api.STRAnnotator.get_str_at_position"><code class="docutils literal notranslate"><span class="pre">STRAnnotator.get_str_at_position()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.api.STRAnnotator.get_statistics"><code class="docutils literal notranslate"><span class="pre">STRAnnotator.get_statistics()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#strvcf_annotator.api.annotate_vcf"><code class="docutils literal notranslate"><span class="pre">annotate_vcf()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Dev Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">Command-line interface</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">strvcf_annotator</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Main functionality</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/main.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-strvcf_annotator.api">
+<span id="main-functionality"></span><h1>Main functionality<a class="headerlink" href="#module-strvcf_annotator.api" title="Link to this heading"></a></h1>
+<p>Library API for programmatic access to STR annotation functionality.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="strvcf_annotator.api.STRAnnotator">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">strvcf_annotator.api.</span></span><span class="sig-name descname"><span class="pre">STRAnnotator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str_bed_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parser</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="api.html#strvcf_annotator.parsers.base.BaseVCFParser" title="strvcf_annotator.parsers.base.BaseVCFParser"><span class="pre">BaseVCFParser</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">somatic_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_mismatch_warnings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mismatch_truth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'panel'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/strvcf_annotator/api.html#STRAnnotator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.api.STRAnnotator" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Main class for STR annotation functionality.</p>
+<p>Provides a high-level interface for annotating VCF files with STR
+(Short Tandem Repeat) information. Supports both single file and
+batch directory processing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>str_bed_path</strong> (<em>str</em>) – Path to BED file containing STR regions</p></li>
+<li><p><strong>parser</strong> (<a class="reference internal" href="api.html#strvcf_annotator.parsers.base.BaseVCFParser" title="strvcf_annotator.parsers.base.BaseVCFParser"><em>BaseVCFParser</em></a><em>, </em><em>optional</em>) – Custom parser for genotype extraction. Uses GenericParser if None.</p></li>
+<li><p><strong>somatic_mode</strong> (<em>bool</em><em>, </em><em>optional</em>) – Enable somatic filtering. When <code class="docutils literal notranslate"><span class="pre">True</span></code>, variants where all samples
+have identical genotypes are skipped. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the value set on
+the annotator instance is used.</p></li>
+<li><p><strong>ignore_mismatch_warnings</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, suppress warnings about reference mismatches between
+the STR panel sequence and the VCF <code class="docutils literal notranslate"><span class="pre">REF</span></code> allele. If <code class="docutils literal notranslate"><span class="pre">None</span></code>,
+the value set on the annotator instance is used.</p></li>
+<li><p><strong>mismatch_truth</strong> (<em>str</em><em>, </em><em>optional</em>) – <p>Specifies which source is treated as ground truth when a mismatch
+between the STR panel and VCF <code class="docutils literal notranslate"><span class="pre">REF</span></code> allele is detected.</p>
+<p>Allowed values are:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;panel&quot;</span></code>: trust the STR panel repeat sequence (default)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;vcf&quot;</span></code>: trust the VCF <code class="docutils literal notranslate"><span class="pre">REF</span></code> allele and patch the overlapping</p></li>
+</ul>
+<p>panel sequence
+- <code class="docutils literal notranslate"><span class="pre">&quot;skip&quot;</span></code>: skip variants with mismatches entirely</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the value set on the annotator instance is used.</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="strvcf_annotator.api.STRAnnotator.str_bed_path">
+<span class="sig-name descname"><span class="pre">str_bed_path</span></span><a class="headerlink" href="#strvcf_annotator.api.STRAnnotator.str_bed_path" title="Link to this definition"></a></dt>
+<dd><p>Path to STR BED file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="strvcf_annotator.api.STRAnnotator.str_df">
+<span class="sig-name descname"><span class="pre">str_df</span></span><a class="headerlink" href="#strvcf_annotator.api.STRAnnotator.str_df" title="Link to this definition"></a></dt>
+<dd><p>Loaded STR reference data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="strvcf_annotator.api.STRAnnotator.parser">
+<span class="sig-name descname"><span class="pre">parser</span></span><a class="headerlink" href="#strvcf_annotator.api.STRAnnotator.parser" title="Link to this definition"></a></dt>
+<dd><p>Parser for genotype extraction</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="api.html#strvcf_annotator.parsers.base.BaseVCFParser" title="strvcf_annotator.parsers.base.BaseVCFParser">BaseVCFParser</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="strvcf_annotator.api.STRAnnotator.somatic_mode">
+<span class="sig-name descname"><span class="pre">somatic_mode</span></span><a class="headerlink" href="#strvcf_annotator.api.STRAnnotator.somatic_mode" title="Link to this definition"></a></dt>
+<dd><p>Whether somatic filtering is enabled</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">annotator</span> <span class="o">=</span> <span class="n">STRAnnotator</span><span class="p">(</span><span class="s1">&#39;str_regions.bed&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">annotator</span><span class="o">.</span><span class="n">annotate_vcf_file</span><span class="p">(</span><span class="s1">&#39;input.vcf&#39;</span><span class="p">,</span> <span class="s1">&#39;output.vcf&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Batch process directory</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">annotator</span><span class="o">.</span><span class="n">process_directory</span><span class="p">(</span><span class="s1">&#39;input_dir/&#39;</span><span class="p">,</span> <span class="s1">&#39;output_dir/&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Stream processing</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vcf_in</span> <span class="o">=</span> <span class="n">pysam</span><span class="o">.</span><span class="n">VariantFile</span><span class="p">(</span><span class="s1">&#39;input.vcf&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">annotator</span><span class="o">.</span><span class="n">annotate_vcf_stream</span><span class="p">(</span><span class="n">vcf_in</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;RU&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="strvcf_annotator.api.STRAnnotator.annotate_vcf_file">
+<span class="sig-name descname"><span class="pre">annotate_vcf_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">somatic_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_mismatch_warnings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mismatch_truth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/api.html#STRAnnotator.annotate_vcf_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.api.STRAnnotator.annotate_vcf_file" title="Link to this definition"></a></dt>
+<dd><p>Annotate a single VCF file with STR information.</p>
+<p>This method reads a VCF file, annotates variants that overlap STR regions,
+and writes the annotated records to an output VCF file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_path</strong> (<em>str</em>) – Path to the input VCF file.</p></li>
+<li><p><strong>output_path</strong> (<em>str</em>) – Path to the output annotated VCF file.</p></li>
+<li><p><strong>somatic_mode</strong> (<em>bool</em><em>, </em><em>optional</em>) – Enable somatic filtering. When <code class="docutils literal notranslate"><span class="pre">True</span></code>, variants where all samples
+have identical genotypes are skipped. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the value set on
+the annotator instance is used.</p></li>
+<li><p><strong>ignore_mismatch_warnings</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, suppress warnings about reference mismatches between
+the STR panel sequence and the VCF <code class="docutils literal notranslate"><span class="pre">REF</span></code> allele. If <code class="docutils literal notranslate"><span class="pre">None</span></code>,
+the value set on the annotator instance is used.</p></li>
+<li><p><strong>mismatch_truth</strong> (<em>str</em><em>, </em><em>optional</em>) – <p>Specifies which source is treated as ground truth when a mismatch
+between the STR panel and VCF <code class="docutils literal notranslate"><span class="pre">REF</span></code> allele is detected.</p>
+<p>Allowed values are:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;panel&quot;</span></code>: trust the STR panel repeat sequence (default)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;vcf&quot;</span></code>: trust the VCF <code class="docutils literal notranslate"><span class="pre">REF</span></code> allele and patch the overlapping</p></li>
+</ul>
+<p>panel sequence
+- <code class="docutils literal notranslate"><span class="pre">&quot;skip&quot;</span></code>: skip variants with mismatches entirely</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the value set on the annotator instance is used.</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="api.html#strvcf_annotator.utils.validation.ValidationError" title="strvcf_annotator.utils.validation.ValidationError"><strong>ValidationError</strong></a> – If the input VCF file is invalid.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">annotator</span> <span class="o">=</span> <span class="n">STRAnnotator</span><span class="p">(</span><span class="s2">&quot;str_regions.bed&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">annotator</span><span class="o">.</span><span class="n">annotate_vcf_file</span><span class="p">(</span><span class="s2">&quot;input.vcf&quot;</span><span class="p">,</span> <span class="s2">&quot;output.vcf&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="strvcf_annotator.api.STRAnnotator.annotate_vcf_stream">
+<span class="sig-name descname"><span class="pre">annotate_vcf_stream</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vcf_in</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">VariantFile</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">somatic_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_mismatch_warnings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mismatch_truth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">VariantRecord</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/strvcf_annotator/api.html#STRAnnotator.annotate_vcf_stream"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.api.STRAnnotator.annotate_vcf_stream" title="Link to this definition"></a></dt>
+<dd><p>Annotate VCF records from an open stream.</p>
+<p>This generator yields annotated VCF records from an already opened
+<code class="docutils literal notranslate"><span class="pre">pysam.VariantFile</span></code> object. It is useful for streaming workflows
+or custom processing pipelines.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vcf_in</strong> (<em>pysam.VariantFile</em>) – Open VCF file object to read variants from.</p></li>
+<li><p><strong>somatic_mode</strong> (<em>bool</em><em>, </em><em>optional</em>) – Enable somatic filtering. When <code class="docutils literal notranslate"><span class="pre">True</span></code>, variants where all samples
+have identical genotypes are skipped. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the value set on
+the annotator instance is used.</p></li>
+<li><p><strong>ignore_mismatch_warnings</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, suppress warnings about reference mismatches between
+the STR panel sequence and the VCF <code class="docutils literal notranslate"><span class="pre">REF</span></code> allele. If <code class="docutils literal notranslate"><span class="pre">None</span></code>,
+the value set on the annotator instance is used.</p></li>
+<li><p><strong>mismatch_truth</strong> (<em>str</em><em>, </em><em>optional</em>) – <p>Specifies which source is treated as ground truth when a mismatch
+between the STR panel and VCF <code class="docutils literal notranslate"><span class="pre">REF</span></code> allele is detected.</p>
+<p>Allowed values are:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;panel&quot;</span></code>: trust the STR panel repeat sequence (default)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;vcf&quot;</span></code>: trust the VCF <code class="docutils literal notranslate"><span class="pre">REF</span></code> allele and patch the overlapping</p></li>
+</ul>
+<p>panel sequence
+- <code class="docutils literal notranslate"><span class="pre">&quot;skip&quot;</span></code>: skip variants with mismatches entirely</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the value set on the annotator instance is used.</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Yields<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>pysam.VariantRecord</em> – Annotated VCF records.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">annotator</span> <span class="o">=</span> <span class="n">STRAnnotator</span><span class="p">(</span><span class="s2">&quot;str_regions.bed&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vcf_in</span> <span class="o">=</span> <span class="n">pysam</span><span class="o">.</span><span class="n">VariantFile</span><span class="p">(</span><span class="s2">&quot;input.vcf&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">annotator</span><span class="o">.</span><span class="n">annotate_vcf_stream</span><span class="p">(</span><span class="n">vcf_in</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;RU&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="strvcf_annotator.api.STRAnnotator.process_directory">
+<span class="sig-name descname"><span class="pre">process_directory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">somatic_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_mismatch_warnings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mismatch_truth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/api.html#STRAnnotator.process_directory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.api.STRAnnotator.process_directory" title="Link to this definition"></a></dt>
+<dd><p>Batch process a directory of VCF files.</p>
+<p>This method processes all VCF files in the input directory and writes
+annotated versions to the output directory. Files that have already
+been processed are skipped automatically.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_dir</strong> (<em>str</em>) – Directory containing input VCF files.</p></li>
+<li><p><strong>output_dir</strong> (<em>str</em>) – Directory where annotated VCF files will be written. The directory
+is created if it does not already exist.</p></li>
+<li><p><strong>somatic_mode</strong> (<em>bool</em><em>, </em><em>optional</em>) – Enable somatic filtering. When <code class="docutils literal notranslate"><span class="pre">True</span></code>, variants where all samples
+have identical genotypes are skipped. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the value set on
+the annotator instance is used.</p></li>
+<li><p><strong>ignore_mismatch_warnings</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, suppress warnings about reference mismatches between
+the STR panel sequence and the VCF <code class="docutils literal notranslate"><span class="pre">REF</span></code> allele. If <code class="docutils literal notranslate"><span class="pre">None</span></code>,
+the value set on the annotator instance is used.</p></li>
+<li><p><strong>mismatch_truth</strong> (<em>str</em><em>, </em><em>optional</em>) – <p>Specifies which source is treated as ground truth when a mismatch
+between the STR panel and VCF <code class="docutils literal notranslate"><span class="pre">REF</span></code> allele is detected.</p>
+<p>Allowed values are:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;panel&quot;</span></code>: trust the STR panel repeat sequence (default)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;vcf&quot;</span></code>: trust the VCF <code class="docutils literal notranslate"><span class="pre">REF</span></code> allele and patch the overlapping</p></li>
+</ul>
+<p>panel sequence
+- <code class="docutils literal notranslate"><span class="pre">&quot;skip&quot;</span></code>: skip variants with mismatches entirely</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the value set on the annotator instance is used.</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="api.html#strvcf_annotator.utils.validation.ValidationError" title="strvcf_annotator.utils.validation.ValidationError"><strong>ValidationError</strong></a> – If the input directory is invalid.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">annotator</span> <span class="o">=</span> <span class="n">STRAnnotator</span><span class="p">(</span><span class="s2">&quot;str_regions.bed&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">annotator</span><span class="o">.</span><span class="n">process_directory</span><span class="p">(</span><span class="s2">&quot;vcf_files/&quot;</span><span class="p">,</span> <span class="s2">&quot;annotated_vcfs/&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="strvcf_annotator.api.STRAnnotator.get_str_at_position">
+<span class="sig-name descname"><span class="pre">get_str_at_position</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chrom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/api.html#STRAnnotator.get_str_at_position"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.api.STRAnnotator.get_str_at_position" title="Link to this definition"></a></dt>
+<dd><p>Get STR region at specific genomic position.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>chrom</strong> (<em>str</em>) – Chromosome name</p></li>
+<li><p><strong>pos</strong> (<em>int</em>) – Genomic position (1-based)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>STR region data if position is within an STR, None otherwise</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[dict]</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">annotator</span> <span class="o">=</span> <span class="n">STRAnnotator</span><span class="p">(</span><span class="s1">&#39;str_regions.bed&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">str_region</span> <span class="o">=</span> <span class="n">annotator</span><span class="o">.</span><span class="n">get_str_at_position</span><span class="p">(</span><span class="s1">&#39;chr1&#39;</span><span class="p">,</span> <span class="mi">1000000</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">str_region</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Repeat unit: </span><span class="si">{</span><span class="n">str_region</span><span class="p">[</span><span class="s1">&#39;RU&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="strvcf_annotator.api.STRAnnotator.get_statistics">
+<span class="sig-name descname"><span class="pre">get_statistics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/api.html#STRAnnotator.get_statistics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.api.STRAnnotator.get_statistics" title="Link to this definition"></a></dt>
+<dd><p>Get statistics about loaded STR regions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Statistics including total regions, chromosomes, repeat units</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">annotator</span> <span class="o">=</span> <span class="n">STRAnnotator</span><span class="p">(</span><span class="s1">&#39;str_regions.bed&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stats</span> <span class="o">=</span> <span class="n">annotator</span><span class="o">.</span><span class="n">get_statistics</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total STR regions: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;total_regions&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="strvcf_annotator.api.annotate_vcf">
+<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.api.</span></span><span class="sig-name descname"><span class="pre">annotate_vcf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_vcf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str_bed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_vcf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parser</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="api.html#strvcf_annotator.parsers.base.BaseVCFParser" title="strvcf_annotator.parsers.base.BaseVCFParser"><span class="pre">BaseVCFParser</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">somatic_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_mismatch_warnings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mismatch_truth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/api.html#annotate_vcf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.api.annotate_vcf" title="Link to this definition"></a></dt>
+<dd><p>Convenience function for single VCF annotation.</p>
+<p>This is a simplified functional interface for annotating a single VCF
+file with STR information, without explicitly creating an
+<a class="reference internal" href="#strvcf_annotator.api.STRAnnotator" title="strvcf_annotator.api.STRAnnotator"><code class="xref py py-class docutils literal notranslate"><span class="pre">STRAnnotator</span></code></a> instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_vcf</strong> (<em>str</em>) – Path to the input VCF file.</p></li>
+<li><p><strong>str_bed</strong> (<em>str</em>) – Path to the STR BED file.</p></li>
+<li><p><strong>output_vcf</strong> (<em>str</em>) – Path to the output annotated VCF file.</p></li>
+<li><p><strong>parser</strong> (<a class="reference internal" href="api.html#strvcf_annotator.parsers.base.BaseVCFParser" title="strvcf_annotator.parsers.base.BaseVCFParser"><em>BaseVCFParser</em></a><em>, </em><em>optional</em>) – Custom parser for genotype extraction. If not provided,
+<code class="xref py py-class docutils literal notranslate"><span class="pre">GenericParser</span></code> is used.</p></li>
+<li><p><strong>somatic_mode</strong> (<em>bool</em><em>, </em><em>optional</em>) – Enable somatic filtering. When <code class="docutils literal notranslate"><span class="pre">True</span></code>, variants where all samples
+have identical genotypes are skipped. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the default
+behavior is used.</p></li>
+<li><p><strong>ignore_mismatch_warnings</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, suppress warnings about reference mismatches between
+the STR panel sequence and the VCF <code class="docutils literal notranslate"><span class="pre">REF</span></code> allele. If <code class="docutils literal notranslate"><span class="pre">None</span></code>,
+the default behavior is used.</p></li>
+<li><p><strong>mismatch_truth</strong> (<em>str</em><em>, </em><em>optional</em>) – <p>Specifies which source is treated as ground truth when a mismatch
+between the STR panel and the VCF <code class="docutils literal notranslate"><span class="pre">REF</span></code> allele is detected.</p>
+<p>Allowed values are:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;panel&quot;</span></code>: trust the STR panel repeat sequence (default)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;vcf&quot;</span></code>: trust the VCF <code class="docutils literal notranslate"><span class="pre">REF</span></code> allele and patch the overlapping
+panel sequence</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;skip&quot;</span></code>: skip variants with mismatches entirely</p></li>
+</ul>
+<p>If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the default behavior is used.</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">strvcf_annotator</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotate_vcf</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">annotate_vcf</span><span class="p">(</span><span class="s2">&quot;input.vcf&quot;</span><span class="p">,</span> <span class="s2">&quot;str_regions.bed&quot;</span><span class="p">,</span> <span class="s2">&quot;output.vcf&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="strvcf_annotator documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api.html" class="btn btn-neutral float-right" title="Dev Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Olesia Kondrateva.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,485 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>strvcf_annotator.core.vcf_processor &mdash; strvcf_annotator 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            strvcf_annotator
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../main.html">Main functionality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Dev Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cli.html">Command-line interface</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">strvcf_annotator</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">strvcf_annotator.core.vcf_processor</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for strvcf_annotator.core.vcf_processor</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;VCF file processing and workflow management.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pysam</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..parsers.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseVCFParser</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..parsers.generic</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenericParser</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils.vcf_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">chrom_to_order</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.annotation</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_new_record</span><span class="p">,</span> <span class="n">make_modified_header</span><span class="p">,</span> <span class="n">should_skip_genotype</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.str_reference</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_str_reference</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="check_vcf_sorted">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.vcf_processor.check_vcf_sorted">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_vcf_sorted</span><span class="p">(</span><span class="n">vcf_in</span><span class="p">:</span> <span class="n">pysam</span><span class="o">.</span><span class="n">VariantFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate VCF sorting by chromosome and position.</span>
+
+<span class="sd">    Checks if VCF records are sorted by chromosome and position.</span>
+<span class="sd">    Rewinds the file after checking.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    vcf_in : pysam.VariantFile</span>
+<span class="sd">        Input VCF file</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        True if VCF is sorted, False otherwise</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">last_chrom</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">last_pos</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+    <span class="k">for</span> <span class="n">rec</span> <span class="ow">in</span> <span class="n">vcf_in</span><span class="p">:</span>
+        <span class="n">chrom</span> <span class="o">=</span> <span class="n">chrom_to_order</span><span class="p">(</span><span class="n">rec</span><span class="o">.</span><span class="n">contig</span><span class="p">)</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">pos</span>
+
+        <span class="k">if</span> <span class="n">last_chrom</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa: SIM102</span>
+            <span class="k">if</span> <span class="n">chrom</span> <span class="o">&lt;</span> <span class="n">last_chrom</span> <span class="ow">or</span> <span class="p">(</span><span class="n">chrom</span> <span class="o">==</span> <span class="n">last_chrom</span> <span class="ow">and</span> <span class="n">pos</span> <span class="o">&lt;</span> <span class="n">last_pos</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not sorted, because </span><span class="si">{</span><span class="n">chrom</span><span class="si">}</span><span class="s2"> &lt; </span><span class="si">{</span><span class="n">last_chrom</span><span class="si">}</span><span class="s2"> or </span><span class="si">{</span><span class="n">pos</span><span class="si">}</span><span class="s2"> &lt; </span><span class="si">{</span><span class="n">last_pos</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">vcf_in</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="n">last_chrom</span><span class="p">,</span> <span class="n">last_pos</span> <span class="o">=</span> <span class="n">chrom</span><span class="p">,</span> <span class="n">pos</span>
+
+    <span class="n">vcf_in</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+    <span class="k">return</span> <span class="kc">True</span></div>
+
+
+
+<div class="viewcode-block" id="reset_and_sort_vcf">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.vcf_processor.reset_and_sort_vcf">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">reset_and_sort_vcf</span><span class="p">(</span><span class="n">vcf_in</span><span class="p">:</span> <span class="n">pysam</span><span class="o">.</span><span class="n">VariantFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">pysam</span><span class="o">.</span><span class="n">VariantRecord</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sort VCF records in memory when needed.</span>
+
+<span class="sd">    Loads all VCF records into memory and sorts them by chromosome</span>
+<span class="sd">    and position according to the contig order in the header.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    vcf_in : pysam.VariantFile</span>
+<span class="sd">        Input VCF file</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    List[pysam.VariantRecord]</span>
+<span class="sd">        Sorted list of VCF records</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This loads the entire VCF into memory, so use with caution for large files.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="n">vcf_in</span><span class="o">.</span><span class="n">header</span>
+    <span class="n">records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">vcf_in</span><span class="p">)</span>
+
+    <span class="c1"># Create contig order mapping</span>
+    <span class="n">contig_order</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">header</span><span class="o">.</span><span class="n">contigs</span><span class="o">.</span><span class="n">keys</span><span class="p">())}</span>
+
+    <span class="c1"># Sort by contig order and position</span>
+    <span class="n">records</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="p">(</span><span class="n">contig_order</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">contig</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)),</span> <span class="n">r</span><span class="o">.</span><span class="n">pos</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">records</span></div>
+
+
+
+<div class="viewcode-block" id="generate_annotated_records">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.vcf_processor.generate_annotated_records">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_annotated_records</span><span class="p">(</span>
+    <span class="n">vcf_in</span><span class="p">:</span> <span class="n">pysam</span><span class="o">.</span><span class="n">VariantFile</span><span class="p">,</span>
+    <span class="n">str_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">parser</span><span class="p">:</span> <span class="n">BaseVCFParser</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">somatic_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">ignore_mismatch_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">mismatch_truth</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;panel&quot;</span><span class="p">,</span>  <span class="c1"># &quot;panel&quot; | &quot;vcf&quot; | &quot;skip&quot;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">pysam</span><span class="o">.</span><span class="n">VariantRecord</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generator yielding annotated VCF records.</span>
+
+<span class="sd">    Processes VCF records and yields annotated records for variants that</span>
+<span class="sd">    overlap with STR regions. Handles sorting if needed and optionally filters</span>
+<span class="sd">    records based on genotype criteria. When multiple STR regions overlap the same POS,</span>
+<span class="sd">    try all overlapping STR candidates and pick the first that produces a</span>
+<span class="sd">    meaningful STR allele change.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    vcf_in : pysam.VariantFile</span>
+<span class="sd">        Input VCF file</span>
+<span class="sd">    str_df : pd.DataFrame</span>
+<span class="sd">        DataFrame with STR regions (from load_str_reference)</span>
+<span class="sd">    parser : BaseVCFParser, optional</span>
+<span class="sd">        Parser for genotype extraction. Uses GenericParser if None.</span>
+<span class="sd">    somatic_mode : bool, optional</span>
+<span class="sd">        Enable somatic filtering. When True, skips variants where both samples</span>
+<span class="sd">        have identical genotypes. Default is False.</span>
+<span class="sd">    ignore_mismatch_warnings : bool, optional</span>
+<span class="sd">        If True, suppresses warnings about reference mismatches between the</span>
+<span class="sd">        STR panel and VCF REF alleles. Default is False.</span>
+<span class="sd">    mismatch_truth : str, optional</span>
+<span class="sd">        Specifies which source to consider as ground truth for mismatches.</span>
+<span class="sd">        Options are &quot;panel&quot;, &quot;vcf&quot;, or &quot;skip&quot;. Default is &quot;panel&quot;.</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    pysam.VariantRecord</span>
+<span class="sd">        Annotated VCF records</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    - Automatically sorts VCF if not sorted</span>
+<span class="sd">    - Skips records without STR overlap</span>
+<span class="sd">    - If somatic_mode=True, filters records with identical genotypes</span>
+<span class="sd">    - ignore_mismatch_warnings controls logging of reference mismatches</span>
+<span class="sd">    - mismatch_truth controls which source is considered ground truth for mismatches</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">parser</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">GenericParser</span><span class="p">()</span>
+
+    <span class="n">mismatch_truth</span> <span class="o">=</span> <span class="p">(</span><span class="n">mismatch_truth</span> <span class="ow">or</span> <span class="s2">&quot;panel&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">mismatch_truth</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;panel&quot;</span><span class="p">,</span> <span class="s2">&quot;vcf&quot;</span><span class="p">,</span> <span class="s2">&quot;skip&quot;</span><span class="p">}:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;mismatch_truth must be one of: &#39;panel&#39;, &#39;vcf&#39;, &#39;skip&#39;&quot;</span><span class="p">)</span>
+
+    <span class="n">header</span> <span class="o">=</span> <span class="n">make_modified_header</span><span class="p">(</span><span class="n">vcf_in</span><span class="p">)</span>
+
+    <span class="c1"># Check if VCF is sorted</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">check_vcf_sorted</span><span class="p">(</span><span class="n">vcf_in</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Input VCF is not sorted - sorting in memory.&quot;</span><span class="p">)</span>
+        <span class="n">records</span> <span class="o">=</span> <span class="n">reset_and_sort_vcf</span><span class="p">(</span><span class="n">vcf_in</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">vcf_in</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+        <span class="n">records</span> <span class="o">=</span> <span class="n">vcf_in</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>
+
+    <span class="c1"># Prepare STR list for efficient lookup</span>
+    <span class="n">str_idx</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">str_list</span> <span class="o">=</span> <span class="n">str_df</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="s2">&quot;records&quot;</span><span class="p">)</span>
+
+    <span class="n">skipped_count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">records</span><span class="p">:</span>
+        <span class="c1"># Advance STR index to current chromosome/position</span>
+        <span class="k">while</span> <span class="n">str_idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">str_list</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span>
+            <span class="n">str_list</span><span class="p">[</span><span class="n">str_idx</span><span class="p">][</span><span class="s2">&quot;CHROM&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">record</span><span class="o">.</span><span class="n">chrom</span>
+            <span class="ow">or</span> <span class="p">(</span>
+                <span class="n">str_list</span><span class="p">[</span><span class="n">str_idx</span><span class="p">][</span><span class="s2">&quot;CHROM&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">record</span><span class="o">.</span><span class="n">chrom</span> <span class="ow">and</span> <span class="n">str_list</span><span class="p">[</span><span class="n">str_idx</span><span class="p">][</span><span class="s2">&quot;END&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">record</span><span class="o">.</span><span class="n">pos</span>
+            <span class="p">)</span>
+        <span class="p">):</span>
+            <span class="n">str_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">str_idx</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">str_list</span><span class="p">):</span>
+            <span class="k">break</span>
+
+        <span class="n">str_row</span> <span class="o">=</span> <span class="n">str_list</span><span class="p">[</span><span class="n">str_idx</span><span class="p">]</span>
+
+        <span class="c1"># Check for overlap - variant position should be within STR region</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">str_row</span><span class="p">[</span><span class="s2">&quot;CHROM&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">record</span><span class="o">.</span><span class="n">chrom</span>
+            <span class="ow">or</span> <span class="n">record</span><span class="o">.</span><span class="n">pos</span> <span class="o">&lt;</span> <span class="n">str_row</span><span class="p">[</span><span class="s2">&quot;START&quot;</span><span class="p">]</span>
+            <span class="ow">or</span> <span class="n">record</span><span class="o">.</span><span class="n">pos</span> <span class="o">&gt;</span> <span class="n">str_row</span><span class="p">[</span><span class="s2">&quot;END&quot;</span><span class="p">]</span>
+        <span class="p">):</span>
+            <span class="k">continue</span>  <span class="c1"># No overlap</span>
+
+        <span class="c1"># Skip based on genotype filtering (only if somatic_mode enabled)</span>
+        <span class="k">if</span> <span class="n">somatic_mode</span> <span class="ow">and</span> <span class="n">should_skip_genotype</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
+            <span class="n">skipped_count</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Skipped </span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">contig</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">pos</span><span class="si">}</span><span class="s2"> - identical genotypes (somatic mode)&quot;</span>
+            <span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Try all STR intervals that overlap this record.pos on the same chromosome</span>
+        <span class="n">chosen</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="n">str_idx</span>
+        <span class="k">while</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">str_list</span><span class="p">)</span> <span class="ow">and</span> <span class="n">str_list</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="s2">&quot;CHROM&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">record</span><span class="o">.</span><span class="n">chrom</span><span class="p">:</span>
+            <span class="n">str_row</span> <span class="o">=</span> <span class="n">str_list</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+
+            <span class="c1"># Once START is past POS, no further overlaps are possible</span>
+            <span class="k">if</span> <span class="n">str_row</span><span class="p">[</span><span class="s2">&quot;START&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">record</span><span class="o">.</span><span class="n">pos</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="c1"># Candidate overlaps POS?</span>
+            <span class="k">if</span> <span class="n">str_row</span><span class="p">[</span><span class="s2">&quot;START&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">record</span><span class="o">.</span><span class="n">pos</span> <span class="o">&lt;=</span> <span class="n">str_row</span><span class="p">[</span><span class="s2">&quot;END&quot;</span><span class="p">]:</span>
+                <span class="n">new_record</span> <span class="o">=</span> <span class="n">build_new_record</span><span class="p">(</span>
+                    <span class="n">record</span><span class="p">,</span>
+                    <span class="n">str_row</span><span class="p">,</span>
+                    <span class="n">header</span><span class="p">,</span>
+                    <span class="n">parser</span><span class="p">,</span>
+                    <span class="n">ignore_mismatch_warnings</span><span class="o">=</span><span class="n">ignore_mismatch_warnings</span><span class="p">,</span>
+                    <span class="n">mismatch_truth</span><span class="o">=</span><span class="n">mismatch_truth</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="c1"># Skip in case of mismatch and mismatch_truth is &quot;skip&quot;</span>
+                <span class="k">if</span> <span class="n">new_record</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">continue</span>
+
+                <span class="k">if</span> <span class="n">new_record</span><span class="o">.</span><span class="n">alleles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">new_record</span><span class="o">.</span><span class="n">alleles</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">chosen</span> <span class="o">=</span> <span class="n">new_record</span>
+                    <span class="k">break</span>
+                <span class="c1"># If variant effectively doesn&#39;t change STR allele (e.g., indel outside STR after normalization),</span>
+                <span class="c1"># treat this STR row as not applicable and try next overlapping STR.</span>
+            <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">chosen</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="k">yield</span> <span class="n">chosen</span>
+
+    <span class="c1"># Log summary if records were skipped</span>
+    <span class="k">if</span> <span class="n">skipped_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Skipped </span><span class="si">{</span><span class="n">skipped_count</span><span class="si">}</span><span class="s2"> records due to identical genotypes (somatic filtering enabled)&quot;</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="annotate_vcf_to_file">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.vcf_processor.annotate_vcf_to_file">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">annotate_vcf_to_file</span><span class="p">(</span>
+    <span class="n">vcf_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">str_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">parser</span><span class="p">:</span> <span class="n">BaseVCFParser</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">somatic_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">ignore_mismatch_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">mismatch_truth</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;panel&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Process VCF file and write annotated output.</span>
+
+<span class="sd">    Reads a VCF file, annotates variants that overlap with STR regions,</span>
+<span class="sd">    and writes the annotated records to an output file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    vcf_path : str</span>
+<span class="sd">        Path to input VCF file</span>
+<span class="sd">    str_df : pd.DataFrame</span>
+<span class="sd">        DataFrame with STR regions (from load_str_reference)</span>
+<span class="sd">    output_path : str</span>
+<span class="sd">        Path to output VCF file</span>
+<span class="sd">    parser : BaseVCFParser, optional</span>
+<span class="sd">        Parser for genotype extraction. Uses GenericParser if None.</span>
+<span class="sd">    somatic_mode : bool, optional</span>
+<span class="sd">        Enable somatic filtering. When True, skips variants where both samples</span>
+<span class="sd">        have identical genotypes. Default is False.</span>
+<span class="sd">    ignore_mismatch_warnings : bool</span>
+<span class="sd">        If True, do not log mismatch warnings between VCF REF and panel repeat sequence.</span>
+<span class="sd">        Annotation continues regardless.</span>
+<span class="sd">    mismatch_truth : str</span>
+<span class="sd">        Which source to treat as correct when there is a mismatch:</span>
+<span class="sd">          - &quot;panel&quot;: trust panel repeat sequence (default behavior)</span>
+<span class="sd">          - &quot;vcf&quot;: trust VCF REF. patch the panel repeat sequence overlap to match VCF REF</span>
+<span class="sd">          - &quot;skip&quot;: skip record with mismatch</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Prints summary statistics after processing.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">parser</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">GenericParser</span><span class="p">()</span>
+
+    <span class="n">vcf_in</span> <span class="o">=</span> <span class="n">pysam</span><span class="o">.</span><span class="n">VariantFile</span><span class="p">(</span><span class="n">vcf_path</span><span class="p">)</span>
+    <span class="n">new_header</span> <span class="o">=</span> <span class="n">make_modified_header</span><span class="p">(</span><span class="n">vcf_in</span><span class="p">)</span>
+    <span class="n">vcf_out</span> <span class="o">=</span> <span class="n">pysam</span><span class="o">.</span><span class="n">VariantFile</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">new_header</span><span class="p">)</span>
+
+    <span class="c1"># Process and write records</span>
+    <span class="n">written_count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">generate_annotated_records</span><span class="p">(</span>
+        <span class="n">vcf_in</span><span class="p">,</span>
+        <span class="n">str_df</span><span class="p">,</span>
+        <span class="n">parser</span><span class="p">,</span>
+        <span class="n">somatic_mode</span><span class="o">=</span><span class="n">somatic_mode</span><span class="p">,</span>
+        <span class="n">ignore_mismatch_warnings</span><span class="o">=</span><span class="n">ignore_mismatch_warnings</span><span class="p">,</span>
+        <span class="n">mismatch_truth</span><span class="o">=</span><span class="n">mismatch_truth</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">vcf_out</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+        <span class="n">written_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="n">vcf_out</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">vcf_in</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Wrote </span><span class="si">{</span><span class="n">written_count</span><span class="si">}</span><span class="s2"> annotated records to </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="process_directory">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.vcf_processor.process_directory">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">process_directory</span><span class="p">(</span>
+    <span class="n">input_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">str_bed_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">output_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">parser</span><span class="p">:</span> <span class="n">BaseVCFParser</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">somatic_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">ignore_mismatch_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">mismatch_truth</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;panel&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Batch process directory of VCF files.</span>
+
+<span class="sd">    Processes all VCF files in a directory and writes annotated versions</span>
+<span class="sd">    to the output directory.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    input_dir : str</span>
+<span class="sd">        Directory containing input VCF files</span>
+<span class="sd">    str_bed_path : str</span>
+<span class="sd">        Path to BED file with STR regions</span>
+<span class="sd">    output_dir : str</span>
+<span class="sd">        Directory for output VCF files</span>
+<span class="sd">    parser : BaseVCFParser, optional</span>
+<span class="sd">        Parser for genotype extraction. Uses GenericParser if None.</span>
+<span class="sd">    somatic_mode : bool, optional</span>
+<span class="sd">        Enable somatic filtering. When True, skips variants where both samples</span>
+<span class="sd">        have identical genotypes. Default is False.</span>
+<span class="sd">    ignore_mismatch_warnings : bool</span>
+<span class="sd">        If True, do not log mismatch warnings between VCF REF and panel repeat sequence.</span>
+<span class="sd">        Annotation continues regardless.</span>
+<span class="sd">    mismatch_truth : str</span>
+<span class="sd">        Which source to treat as correct when there is a mismatch:</span>
+<span class="sd">          - &quot;panel&quot;: trust panel repeat sequence (default behavior)</span>
+<span class="sd">          - &quot;vcf&quot;: trust VCF REF. patch the panel repeat sequence overlap to match VCF REF</span>
+<span class="sd">          - &quot;skip&quot;: skip record with mismatch</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">parser</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">GenericParser</span><span class="p">()</span>
+
+    <span class="c1"># Create output directory</span>
+    <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Load STR reference</span>
+    <span class="n">str_df</span> <span class="o">=</span> <span class="n">load_str_reference</span><span class="p">(</span><span class="n">str_bed_path</span><span class="p">)</span>
+
+    <span class="c1"># Process each VCF file</span>
+    <span class="n">input_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">input_dir</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">vcf_file</span> <span class="ow">in</span> <span class="n">input_path</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;*.vcf*&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">vcf_file</span><span class="o">.</span><span class="n">suffix</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;.vcf&quot;</span><span class="p">,</span> <span class="s2">&quot;.gz&quot;</span><span class="p">]:</span>
+            <span class="c1"># Generate output filename</span>
+            <span class="n">base_name</span> <span class="o">=</span> <span class="n">vcf_file</span><span class="o">.</span><span class="n">stem</span>
+            <span class="k">if</span> <span class="n">base_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.vcf&quot;</span><span class="p">):</span>
+                <span class="n">base_name</span> <span class="o">=</span> <span class="n">base_name</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span>
+            <span class="n">output_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_name</span><span class="si">}</span><span class="s2">.annotated.vcf&quot;</span>
+
+            <span class="c1"># Skip if already processed</span>
+            <span class="k">if</span> <span class="n">output_file</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipping </span><span class="si">{</span><span class="n">vcf_file</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> — already processed.&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing </span><span class="si">{</span><span class="n">vcf_file</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+            <span class="n">annotate_vcf_to_file</span><span class="p">(</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">vcf_file</span><span class="p">),</span>
+                <span class="n">str_df</span><span class="p">,</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">output_file</span><span class="p">),</span>
+                <span class="n">parser</span><span class="p">,</span>
+                <span class="n">somatic_mode</span><span class="o">=</span><span class="n">somatic_mode</span><span class="p">,</span>
+                <span class="n">ignore_mismatch_warnings</span><span class="o">=</span><span class="n">ignore_mismatch_warnings</span><span class="p">,</span>
+                <span class="n">mismatch_truth</span><span class="o">=</span><span class="n">mismatch_truth</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; → Output: </span><span class="si">{</span><span class="n">output_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Olesia Kondrateva.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
