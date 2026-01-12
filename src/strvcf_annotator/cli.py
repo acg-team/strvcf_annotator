@@ -49,6 +49,10 @@ Examples:
 
   # Somatic mode (filter variants where tumor==normal genotypes)
   strvcf-annotator --input somatic.vcf --str-bed repeats.bed --output output.vcf --somatic-mode
+
+  # Suppress mismatch warnings and trust VCF reference when mismatch happens
+  strvcf-annotator --input input.vcf --str-bed repeats.bed --output output.vcf \\
+                   --ignore-mismatch-warnings --mismatch-truth vcf
         """,
     )
 
@@ -82,7 +86,23 @@ Examples:
         action="store_true",
         help="Enable somatic filtering: skip variants where both samples have identical genotypes",
     )
-
+    parser.add_argument(
+        "--ignore-mismatch-warnings",
+        action="store_true",
+        help=(
+            "Suppress warnings about reference mismatches between STR panel sequence "
+            "and VCF REF allele."
+        ),
+    )
+    parser.add_argument(
+        "--mismatch-truth",
+        choices=["panel", "vcf", "skip"],
+        default="panel",
+        help=(
+            "Which source to treat as ground truth when a mismatch is detected: "
+            "'panel' (default), 'vcf', or 'skip' (skip mismatching loci)."
+        ),
+    )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
 
     return parser
@@ -131,7 +151,14 @@ def main():
         # Create annotator
         logger.info("Initializing STR annotator...")
         somatic_mode = getattr(args, "somatic_mode", False)
-        annotator = STRAnnotator(args.str_bed, somatic_mode=somatic_mode)
+        ignore_mismatch_warnings = getattr(args, "ignore_mismatch_warnings", False)
+        mismatch_truth = getattr(args, "mismatch_truth", "panel")
+        annotator = STRAnnotator(
+            args.str_bed,
+            somatic_mode=somatic_mode,
+            ignore_mismatch_warnings=ignore_mismatch_warnings,
+            mismatch_truth=mismatch_truth,
+        )
 
         # Display statistics
         stats = annotator.get_statistics()
@@ -143,13 +170,23 @@ def main():
         if args.input:
             # Single file mode
             logger.info(f"Processing single file: {args.input}")
-            annotator.annotate_vcf_file(args.input, args.output)
+            annotator.annotate_vcf_file(
+                args.input,
+                args.output,
+                ignore_mismatch_warnings=args.ignore_mismatch_warnings,
+                mismatch_truth=args.mismatch_truth,
+            )
             logger.info(f"Successfully wrote annotated VCF to {args.output}")
 
         elif args.input_dir:
             # Batch directory mode
             logger.info(f"Processing directory: {args.input_dir}")
-            annotator.process_directory(args.input_dir, args.output_dir)
+            annotator.process_directory(
+                args.input_dir,
+                args.output_dir,
+                ignore_mismatch_warnings=args.ignore_mismatch_warnings,
+                mismatch_truth=args.mismatch_truth,
+            )
             logger.info(f"Successfully processed all VCF files to {args.output_dir}")
 
         logger.info("Annotation complete!")

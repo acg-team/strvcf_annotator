@@ -7,6 +7,8 @@ tests/cli/__pycache__
 tests/integration/__pycache__
 tests/output
 tests/unit/__pycache__
+src/strvcf_annotator.egg-info
+docs/build
 .tox
 dist
 log*

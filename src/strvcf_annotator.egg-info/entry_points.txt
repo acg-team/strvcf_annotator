@@ -1,2 +1,0 @@
-[console_scripts]
-strvcf-annotator = strvcf_annotator.cli:main

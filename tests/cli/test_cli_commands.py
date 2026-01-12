@@ -46,7 +46,7 @@ class TestCLIBasicUsage:
         """Test --version flag."""
         result = subprocess.run(["strvcf-annotator", "--version"], capture_output=True, text=True)
         assert result.returncode == 0
-        assert "0.2.2" in result.stdout
+        assert "0.3.0" in result.stdout
 
     def test_no_arguments_fails(self):
         """Test that running without arguments fails."""
@@ -483,3 +483,130 @@ class TestCLIEdgeCases:
         finally:
             os.unlink(temp_vcf.name)
             os.unlink(temp_bed.name)
+
+class TestCLIMismatchOptions:
+    """Tests for CLI mismatch-handling options."""
+
+    def test_help_includes_mismatch_options(self):
+        """Test that --help shows new mismatch options."""
+        result = subprocess.run(["strvcf-annotator", "--help"], capture_output=True, text=True)
+        assert result.returncode == 0
+        assert "--ignore-mismatch-warnings" in result.stdout
+        assert "--mismatch-truth" in result.stdout
+        # Ensure choices are documented
+        assert "panel" in result.stdout
+        assert "vcf" in result.stdout
+        assert "skip" in result.stdout
+
+    @pytest.mark.parametrize("truth", ["panel", "vcf", "skip"])
+    def test_single_file_with_mismatch_truth_modes(self, sample_vcf, sample_bed, temp_output_dir, truth):
+        """Test single-file annotation works for all mismatch truth modes."""
+        output_vcf = os.path.join(temp_output_dir, f"annotated.{truth}.vcf")
+
+        result = subprocess.run(
+            [
+                "strvcf-annotator",
+                "--input",
+                sample_vcf,
+                "--str-bed",
+                sample_bed,
+                "--output",
+                output_vcf,
+                "--mismatch-truth",
+                truth,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+
+        assert result.returncode == 0, f"STDOUT: {result.stdout}\nSTDERR: {result.stderr}"
+        assert os.path.exists(output_vcf)
+        assert os.path.getsize(output_vcf) > 0
+
+    def test_single_file_ignore_mismatch_warnings_flag(self, sample_vcf, sample_bed, temp_output_dir):
+        """Test that ignore mismatch warnings flag is accepted and annotation succeeds."""
+        output_vcf = os.path.join(temp_output_dir, "annotated.ignore_warn.vcf")
+
+        result = subprocess.run(
+            [
+                "strvcf-annotator",
+                "--input",
+                sample_vcf,
+                "--str-bed",
+                sample_bed,
+                "--output",
+                output_vcf,
+                "--ignore-mismatch-warnings",
+                "--mismatch-truth",
+                "panel",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+
+        assert result.returncode == 0, f"STDOUT: {result.stdout}\nSTDERR: {result.stderr}"
+        assert os.path.exists(output_vcf)
+        assert os.path.getsize(output_vcf) > 0
+
+        # We keep this test weak to avoid flakiness across datasets/logging.
+        assert "Reference mismatch in STR overlap" not in result.stderr
+
+    def test_invalid_mismatch_truth_fails(self, sample_vcf, sample_bed, temp_output_dir):
+        """Test that invalid mismatch truth value fails via argparse choices."""
+        output_vcf = os.path.join(temp_output_dir, "annotated.invalid.vcf")
+
+        result = subprocess.run(
+            [
+                "strvcf-annotator",
+                "--input",
+                sample_vcf,
+                "--str-bed",
+                sample_bed,
+                "--output",
+                output_vcf,
+                "--mismatch-truth",
+                "badvalue",
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode != 0
+        # argparse usually prints "invalid choice"
+        assert "invalid choice" in result.stderr.lower() or "choices" in result.stderr.lower()
+
+    @pytest.mark.parametrize("truth", ["panel", "vcf", "skip"])
+    def test_batch_mode_with_mismatch_options(self, data_dir, sample_bed, temp_output_dir, truth):
+        """Test batch mode accepts mismatch options and runs."""
+        temp_input_dir = tempfile.mkdtemp()
+        try:
+            sample_vcf = os.path.join(data_dir, "TCGA-DC-6682.vcf")
+            shutil.copy(sample_vcf, os.path.join(temp_input_dir, "test.vcf"))
+
+            result = subprocess.run(
+                [
+                    "strvcf-annotator",
+                    "--input-dir",
+                    temp_input_dir,
+                    "--str-bed",
+                    sample_bed,
+                    "--output-dir",
+                    temp_output_dir,
+                    "--ignore-mismatch-warnings",
+                    "--mismatch-truth",
+                    truth,
+                ],
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+
+            assert result.returncode == 0, f"STDOUT: {result.stdout}\nSTDERR: {result.stderr}"
+            assert os.path.exists(temp_output_dir)
+            assert len(os.listdir(temp_output_dir)) > 0
+
+        finally:
+            if os.path.exists(temp_input_dir):
+                shutil.rmtree(temp_input_dir)

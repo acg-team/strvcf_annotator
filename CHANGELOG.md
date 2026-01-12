@@ -5,13 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Planned
-- Add support for multi-allelic variants
-- Implement custom parser for additional VCF callers
-- Add performance optimizations for large VCF files
-- Integrate with cloud storage (S3, GCS)
+## [0.3.0] - 2026-01-12
+- **Mismatch handling between VCF and STR panel**
+  * Added support for cases where the VCF reference does not exactly match the STR panel.
+    * **`ignore_mismatch_warnings` (bool, optional)**
+      Suppresses warnings when the STR panel sequence does not match the VCF reference allele.
+      Default: `False`.
+    * **`mismatch_truth` (str, optional)**
+      Defines which source is treated as correct when a mismatch is detected:
+      * **`panel`**: trust the STR panel sequence (default).
+      * **`vcf`**: trust the VCF reference sequence.
+      * **`skip`**: skip loci with mismatches.
 
 ## [0.2.2] - 2025-12-04
 - Change `apply_variant_to_repeat` function for applying VCF variants to STR panel sequences.

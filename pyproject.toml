@@ -31,6 +31,7 @@ classifiers = [
 dependencies = [
     "pysam>=0.22.0",
     "pandas>=2.0.0",
+    "trtools"
 ]
 
 [project.optional-dependencies]
@@ -44,6 +45,10 @@ dev = [
     "twine>=4.0.0",
     "bump2version>=1.0.1",
     "watchdog>=3.0.0",
+    "sphinx",
+    "sphinx-rtd-theme",
+    "myst-parser",
+    "sphinx-argparse"
 ]
 
 [project.urls]

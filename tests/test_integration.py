@@ -130,7 +130,9 @@ chr2\t305\t.\tG\tA\t.\t.\t.\tGT:AD:DP\t0/1:12,8:20\t1/1:0,18:18
 
                 # Process directory
                 annotator = STRAnnotator(str_bed_file)
-                annotator.process_directory(input_dir, output_dir)
+                annotator.process_directory(
+                    input_dir, output_dir, ignore_mismatch_warnings=True, mismatch_truth="vcf"
+                )
 
                 # Verify output
                 output_files = list(Path(output_dir).glob("*.vcf"))
