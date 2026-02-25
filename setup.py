@@ -21,7 +21,7 @@ requirements = [
     "pysam>=0.22.0",
     "pandas>=2.0.0",
     "trtools>=5.0.0",
-    "psutil"
+    "psutil",
 ]
 
 test_requirements = [

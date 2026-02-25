@@ -15,7 +15,6 @@ from ..parsers.base import BaseVCFParser
 from ..parsers.generic import GenericParser
 from ..utils.vcf_utils import chrom_to_order
 from .annotation import build_new_record, make_modified_header, should_skip_genotype
-from .str_reference import load_str_reference
 
 logger = logging.getLogger(__name__)
 # Globals initialized once per worker process
@@ -387,7 +386,7 @@ def get_available_ram_bytes() -> int:
     return int(psutil.virtual_memory().available)
 
 
-def estimate_ram_per_worker_bytes(vcf_paths: list[str]) -> int:
+def estimate_ram_per_worker_bytes(vcf_paths: List[str]) -> int:
     """Estimate RAM usage per worker for VCF annotation.
 
     Provides an estimate of how much memory a single worker process
@@ -448,7 +447,7 @@ def estimate_ram_per_worker_bytes(vcf_paths: list[str]) -> int:
     return int(min(max(estimate, min_estimate), max_estimate))
 
 
-def compute_jobs_auto(n_files: int, vcf_paths: list[str]) -> int:
+def compute_jobs_auto(n_files: int, vcf_paths: List[str]) -> int:
     """Compute an automatic number of concurrent workers.
 
     Chooses a default number of parallel jobs for processing a directory of VCF
