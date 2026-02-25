@@ -20,7 +20,8 @@ with open(init_file) as f:
 requirements = [
     "pysam>=0.22.0",
     "pandas>=2.0.0",
-    "trtools>=5.0.0"
+    "trtools>=5.0.0",
+    "psutil"
 ]
 
 test_requirements = [
