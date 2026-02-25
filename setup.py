@@ -20,6 +20,7 @@ with open(init_file) as f:
 requirements = [
     "pysam>=0.22.0",
     "pandas>=2.0.0",
+    "trtools>=5.0.0"
 ]
 
 test_requirements = [
@@ -32,7 +33,7 @@ setup(
     author_email="xkdnoa@gmail.com",
     python_requires=">=3.8",
     classifiers=[
-        "Development Status :: 2 - Pre-Alpha",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",

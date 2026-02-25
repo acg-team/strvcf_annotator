@@ -1,5 +1,7 @@
 import hashlib
 import os
+import time
+from pathlib import Path
 
 import pytest
 
@@ -80,3 +82,75 @@ class TestProcessVcf:
         assert first_hash == second_hash, (
             f"Re-annotating {input_vcf} is not idempotent: {first_hash} != {second_hash}"
         )
+
+
+def list_input_vcfs(vcf_dir: str) -> list[str]:
+    """Return input VCF/VCF.GZ files found in vcf_dir (sorted)."""
+    root = Path(vcf_dir)
+    files = sorted([str(p) for p in root.rglob("*.vcf")]) + sorted(
+        [str(p) for p in root.rglob("*.vcf.gz")]
+    )
+    return files
+
+
+def expected_output_path(output_dir: str, input_vcf: str) -> str:
+    """Mirror process_directory output naming: <stem>.annotated.vcf"""
+    name = os.path.basename(input_vcf).replace(".vcf.gz", "").replace(".vcf", "")
+    return os.path.abspath(os.path.join(output_dir, f"{name}.annotated.vcf"))
+
+
+@pytest.mark.integration
+class TestProcessDirectoryParallel:
+    """Integration tests for directory-level parallel processing."""
+
+    def test_parallel_vs_serial(self, vcf_dir, output_dir):
+        """Serial (jobs=1) and parallel (jobs>1) runs should produce identical outputs."""
+        str_bed = os.path.abspath(os.path.join(base_dir, "data", "GRCh38_repeats.bed"))
+
+        inputs = list_input_vcfs(vcf_dir)
+        assert len(inputs) > 0, f"No VCF files found in {vcf_dir}"
+
+        serial_out = os.path.abspath(os.path.join(output_dir, "serial"))
+        parallel_out = os.path.abspath(os.path.join(output_dir, "parallel"))
+        os.makedirs(serial_out, exist_ok=True)
+        os.makedirs(parallel_out, exist_ok=True)
+
+        annotator = STRAnnotator(str_bed)
+
+        # Run serial (jobs=1)
+        t0 = time.perf_counter()
+        annotator.process_directory(
+            input_dir=vcf_dir,
+            output_dir=serial_out,
+            jobs=1,
+        )
+        t1 = time.perf_counter()
+        serial_time = t1 - t0
+
+        # Run parallel (jobs=auto)
+        t2 = time.perf_counter()
+        annotator.process_directory(input_dir=vcf_dir, output_dir=parallel_out)
+        t3 = time.perf_counter()
+        parallel_time = t3 - t2
+
+        # Parallel should not be slower
+        assert parallel_time <= serial_time, (
+            f"Parallel run slower than expected: serial={serial_time:.3f}s "
+            f"parallel={parallel_time:.3f}s"
+        )
+
+        # Compare hashes for all expected outputs
+        for input_vcf in inputs:
+            serial_file = expected_output_path(serial_out, input_vcf)
+            parallel_file = expected_output_path(parallel_out, input_vcf)
+
+            assert os.path.exists(serial_file), f"Missing serial output: {serial_file}"
+            assert os.path.exists(parallel_file), f"Missing parallel output: {parallel_file}"
+
+            serial_hash = file_hash(serial_file)
+            parallel_hash = file_hash(parallel_file)
+
+            assert serial_hash == parallel_hash, (
+                f"Output mismatch for {os.path.basename(input_vcf)}: "
+                f"serial={serial_hash} parallel={parallel_hash}"
+            )

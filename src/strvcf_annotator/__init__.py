@@ -7,7 +7,7 @@ that overlap with STR regions.
 
 __author__ = """Olesia Kondrateva"""
 __email__ = "xkdnoa@gmail.com"
-__version__ = "0.3.0"
+__version__ = "1.0.0"
 
 # Public API exports
 from .api import STRAnnotator, annotate_vcf

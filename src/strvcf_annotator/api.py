@@ -1,6 +1,8 @@
 """Library API for programmatic access to STR annotation functionality."""
 
 import logging
+import statistics
+from collections import Counter
 from typing import Iterator, Optional
 
 import pysam
@@ -83,16 +85,13 @@ class STRAnnotator:
         mismatch_truth: str = "panel",  # "panel" | "vcf" | "skip"
     ):
         validate_str_bed_file(str_bed_path)
-        self.str_bed_path = str_bed_path
-        self.str_df = load_str_reference(str_bed_path)
+        self.str_panel_gz = load_str_reference(str_bed_path)
 
         self.parser = parser if parser is not None else GenericParser()
         self.somatic_mode = somatic_mode
 
         self.ignore_mismatch_warnings = ignore_mismatch_warnings
         self.mismatch_truth = mismatch_truth
-
-        logger.info(f"Loaded {len(self.str_df)} STR regions from {str_bed_path}")
 
     def annotate_vcf_file(
         self,
@@ -135,7 +134,6 @@ class STRAnnotator:
             - ``"skip"``: skip variants with mismatches entirely
 
             If ``None``, the value set on the annotator instance is used.
-
         Raises
         ------
         ValidationError
@@ -160,7 +158,7 @@ class STRAnnotator:
         logger.info(f"Annotating {input_path}...")
         annotate_vcf_to_file(
             input_path,
-            self.str_df,
+            self.str_panel_gz,
             output_path,
             self.parser,
             somatic_mode=smode,
@@ -231,7 +229,7 @@ class STRAnnotator:
 
         yield from generate_annotated_records(
             vcf_in=vcf_in,
-            str_df=self.str_df,
+            str_panel_gz=self.str_panel_gz,
             parser=self.parser,
             somatic_mode=smode,
             ignore_mismatch_warnings=imw,
@@ -246,6 +244,7 @@ class STRAnnotator:
         somatic_mode: Optional[bool] = None,
         ignore_mismatch_warnings: Optional[bool] = None,
         mismatch_truth: Optional[str] = None,
+        jobs: Optional[int] = None,
     ) -> None:
         """
         Batch process a directory of VCF files.
@@ -281,7 +280,11 @@ class STRAnnotator:
             - ``"skip"``: skip variants with mismatches entirely
 
             If ``None``, the value set on the annotator instance is used.
-
+        jobs: int, optional
+            - If jobs is None: compute jobs automatically:
+                jobs_auto = min(cpu_cores, n_files)
+                jobs_auto = min(jobs_auto, floor(available_ram / ram_per_worker_estimate))
+            - If jobs is provided: use it exactly.
         Raises
         ------
         ValidationError
@@ -307,12 +310,13 @@ class STRAnnotator:
         logger.info(f"Processing VCF files in {input_dir}...")
         process_directory(
             input_dir=input_dir,
-            str_bed_path=self.str_bed_path,
+            str_panel_gz=self.str_panel_gz,
             output_dir=output_dir,
             parser=self.parser,
             somatic_mode=smode,
             ignore_mismatch_warnings=imw,
             mismatch_truth=mtruth,
+            jobs=jobs,
         )
         logger.info(f"Batch processing complete. Output in {output_dir}")
 
@@ -341,7 +345,7 @@ class STRAnnotator:
         """
         from .core.str_reference import get_str_at_position
 
-        return get_str_at_position(self.str_df, chrom, pos)
+        return get_str_at_position(self.str_panel_gz, chrom, pos)
 
     def get_statistics(self) -> dict:
         """
@@ -358,15 +362,48 @@ class STRAnnotator:
         >>> stats = annotator.get_statistics()
         >>> print(f"Total STR regions: {stats['total_regions']}")
         """
-        stats = {
-            "total_regions": len(self.str_df),
-            "chromosomes": self.str_df["CHROM"].nunique(),
-            "unique_repeat_units": self.str_df["RU"].nunique(),
-            "period_distribution": self.str_df["PERIOD"].value_counts().to_dict(),
-            "mean_repeat_count": self.str_df["COUNT"].mean(),
-            "median_repeat_count": self.str_df["COUNT"].median(),
+        tbx = pysam.TabixFile(self.str_panel_gz)
+
+        total_regions = 0
+        chromosomes = set()
+        repeat_units = set()
+        period_counter = Counter()
+        counts = []
+
+        # Iterate through all records in the file
+        for line in tbx.fetch():
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 5:
+                continue
+
+            try:
+                chrom = parts[0]
+                period = int(parts[3])
+                ru = parts[4]
+                count = int(parts[5]) if len(parts) > 5 else None
+            except ValueError:
+                continue
+
+            total_regions += 1
+            chromosomes.add(chrom)
+            repeat_units.add(ru)
+            period_counter[period] += 1
+            if count is not None:
+                counts.append(count)
+
+        tbx.close()
+
+        mean_count = statistics.mean(counts) if counts else None
+        median_count = statistics.median(counts) if counts else None
+
+        return {
+            "total_regions": total_regions,
+            "chromosomes": len(chromosomes),
+            "unique_repeat_units": len(repeat_units),
+            "period_distribution": dict(period_counter),
+            "mean_repeat_count": mean_count,
+            "median_repeat_count": median_count,
         }
-        return stats
 
 
 def annotate_vcf(
