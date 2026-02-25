@@ -25,6 +25,7 @@ def basic_header():
     header.add_sample("TUMOR")
     header.add_sample("NORMAL")
 
+    # INFO schema (S1 is Number=1 so pysam disallows tuple assignment via API)
     header.info.add("FLAG1", 0, "Flag", "Flag field")
     header.info.add("S1", 1, "String", "Single string")
     header.info.add("I1", 1, "Integer", "Single integer")
@@ -38,42 +39,38 @@ def basic_header():
 
 @pytest.fixture
 def basic_record(basic_header):
-    """Create a pysam VariantRecord for tests."""
+    """Create a VariantRecord containing 'weird' INFO encodings for normalize_info_fields tests.
+
+    We write the header via pysam, then append a raw VCF line to bypass pysam's
+    strict schema checks during assignment.
+    """
     tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".vcf", delete=False)
     tmp.close()
 
     try:
-        with pysam.VariantFile(tmp.name, "w", header=basic_header) as vcf_out:
-            rec = vcf_out.new_record(
-                contig="chr1",
-                start=99,
-                alleles=("A", "T"),
-                qual=30,
-                filter=["PASS"],
-            )
+        # This writes the header automatically
+        with pysam.VariantFile(tmp.name, "w", header=basic_header):
+            pass
 
-            # INFO: include various types
-            rec.info["FLAG1"] = True
-            rec.info["S1"] = ("a", "b")  # should become "a|b"
-            rec.info["I1"] = (10,)  # should become 10
-            rec.info["R1"] = (1, 2, 3, 4)  # should be clipped to [1,2]
-            rec.info["UNKNOWN"] = "skip_me"  # not in header -> skipped
+        # Append a raw record line with intentionally odd INFO encodings:
+        # - S1=a,b even though header says Number=1 (String)
+        # - I1=10,11 even though header says Number=1 (Integer)
+        # - R1 has 4 values though Number=R should be 2 for REF+ALT
+        raw_line = (
+            "chr1\t100\t.\tA\tT\t30\tPASS\t"
+            "FLAG1;S1=a,b;I1=10,11;R1=1,2,3,4;UNKNOWN=skip_me\t"
+            "GT:AD\t0/1:10,5\t0/0:12,0\n"
+        )
 
-            # FORMAT fields
-            rec.samples["TUMOR"]["GT"] = (0, 1)
-            rec.samples["TUMOR"]["AD"] = (10, 5)
-            rec.samples["NORMAL"]["GT"] = (0, 0)
-            rec.samples["NORMAL"]["AD"] = (12, 0)
-
-            vcf_out.write(rec)
+        with open(tmp.name, "a", encoding="utf-8") as f:
+            f.write(raw_line)
 
         with pysam.VariantFile(tmp.name) as vcf_in:
-            records = list(vcf_in)
-            assert len(records) == 1
-            return records[0]
+            rec = next(iter(vcf_in))
+            return rec
+
     finally:
         os.unlink(tmp.name)
-
 
 class TestChromToOrder:
     """Tests for chrom_to_order."""

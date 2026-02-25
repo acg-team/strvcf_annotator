@@ -127,7 +127,7 @@ def load_str_reference(str_path: str) -> pd.DataFrame:
     cache_dir_path = bed_path.parent
 
     # If input is already gz + tbi, trust and return.
-    if bed_path.suffix == ".gz" and bed_path.exists() and is_valid_tabix(bed_path):
+    if bed_path.suffix == ".gz" and bed_path.exists() and is_valid_tabix(str(bed_path)):
         return str(bed_path)
 
     # Determine output names
