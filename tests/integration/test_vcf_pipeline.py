@@ -84,7 +84,7 @@ class TestProcessVcf:
         )
 
 
-def list_input_vcfs(vcf_dir: str) -> list[str]:
+def list_input_vcfs(vcf_dir: str) -> List[str]:
     """Return input VCF/VCF.GZ files found in vcf_dir (sorted)."""
     root = Path(vcf_dir)
     files = sorted([str(p) for p in root.rglob("*.vcf")]) + sorted(
