@@ -8,6 +8,7 @@ import pysam
 import pytest
 
 from strvcf_annotator import STRAnnotator
+from strvcf_annotator.core.str_reference import is_valid_tabix
 
 
 class TestPerformance:
@@ -60,7 +61,9 @@ class TestPerformance:
 
         # Should load 1000 regions in under 1 second
         assert load_time < 1.0, f"Loading took {load_time:.2f}s, expected < 1.0s"
-        assert len(annotator.str_df) == 1000
+        assert Path(annotator.str_panel_gz).exists() and is_valid_tabix(annotator.str_panel_gz), (
+            "STR BED file should be cached and indexed"
+        )
 
     def test_annotation_performance(self, large_str_bed, large_vcf):
         """Test annotation performance."""

@@ -1,114 +1,247 @@
 """STR reference management for BED file loading and region lookups."""
 
+import os
+from pathlib import Path
 from typing import Dict, Optional
 
 import pandas as pd
+import pysam
 
 from ..utils.vcf_utils import chrom_to_order
 
 
-def load_str_reference(str_path: str) -> pd.DataFrame:
-    """Load STR reference data from BED file.
+def is_valid_tabix(gz_path: str) -> bool:
+    """Check that a BGZF file has a valid tabix index.
 
-    Loads a BED file containing STR (Short Tandem Repeat) regions and converts
-    coordinates from 0-based BED format to 1-based VCF format. Calculates the
-    number of repeat units for each region.
+    Returns True only if:
+    - .tbi exists
+    - pysam can open the file
+    - index is readable
+    """
+    tbi_path = gz_path + ".tbi"
+    if not os.path.exists(gz_path) or not os.path.exists(tbi_path):
+        return False
+
+    try:
+        tbx = pysam.TabixFile(gz_path)
+        # Accessing contigs forces index parsing
+        _ = tbx.contigs
+        tbx.close()
+        return True
+    except Exception:
+        return False
+
+
+def sort_bed_file(
+    bed_path: str,
+    output_path: str,
+    chrom_col: int = 0,
+    start_col: int = 1,
+) -> str:
+    """Sort a BED-like file by chromosome and start coordinate.
 
     Parameters
     ----------
-    str_path : str
-        Path to BED file with STR regions
+    bed_path : str
+        Path to input BED file (tab-delimited).
+    output_path : str
+        Path to write the sorted BED file.
+    chrom_col : int, optional
+        Zero-based column index for chromosome. Default is 0.
+    start_col : int, optional
+        Zero-based column index for start coordinate. Default is 1.
 
     Returns
     -------
-    pd.DataFrame
-        DataFrame with columns: CHROM, START, END, PERIOD, RU, COUNT
-        - CHROM: Chromosome name
-        - START: 1-based start position (converted from BED 0-based)
-        - END: 1-based end position
-        - PERIOD: Length of repeat unit
-        - RU: Repeat unit sequence
-        - COUNT: Number of repeat units in the region
+    str
+        Path to the sorted BED file.
 
     Notes
     -----
-    BED files use 0-based coordinates, but VCF files use 1-based coordinates.
-    This function converts START positions by adding 1. END positions are kept
-    as-is since BED END is exclusive and VCF END is inclusive.
+    - This function loads the BED into memory via pandas. For extremely large
+      BED files, consider an external sort.
+    - Sorting is lexicographic by chromosome, then numeric by start.
     """
-    df = pd.read_csv(str_path, sep="\t", header=None)
-    df.columns = ["CHROM", "START", "END", "PERIOD", "RU"]
+    bed_path = str(bed_path)
+    output_path = str(output_path)
 
-    # Convert from 0-based BED to 1-based VCF coordinates
-    df["START"] = df["START"] + 1
+    df = pd.read_csv(
+        bed_path,
+        sep="\t",
+        header=None,
+        comment="#",
+        dtype={chrom_col: "string"},
+    )
 
-    # Calculate number of repeat units
-    df["COUNT"] = (df["END"] - df["START"] + 1) / df["PERIOD"]
+    # Ensure start is numeric
+    df[start_col] = df[start_col].astype("int64")
 
-    # Add chromosome order column for proper sorting
-    df["CHROM_ORDER"] = df["CHROM"].apply(chrom_to_order)
+    # Compute genomic order
+    chrom_series = df[chrom_col].astype("string")
+    chrom_order = chrom_series.map(chrom_to_order)
 
-    # Sort by chromosome (natural order) and position for efficient lookups
-    df.sort_values(by=["CHROM_ORDER", "START"], inplace=True)
-    df.drop(columns="CHROM_ORDER", inplace=True)
-    return df
+    # If unknown chromosomes appear, push them to the end
+    chrom_order = chrom_order.fillna(10**9)
+
+    df = df.assign(_chrom_order=chrom_order)
+
+    df.sort_values(
+        by=["_chrom_order", start_col],
+        kind="mergesort",  # stable sort
+        inplace=True,
+    )
+
+    df.drop(columns=["_chrom_order"], inplace=True)
+
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(output_path, sep="\t", header=False, index=False)
+
+    return output_path
 
 
-def find_overlapping_str(str_df: pd.DataFrame, chrom: str, pos: int, end: int) -> Optional[Dict]:
-    """Find STR region overlapping with variant coordinates.
+def load_str_reference(str_path: str) -> str:
+    """Ensure a BED file is BGZF-compressed and tabix-indexed.
 
-    Searches for an STR region that overlaps with the given variant position.
-    Uses efficient binary search on sorted DataFrame.
+    This function:
+    - Accepts a BED path (.bed or .bed.gz).
+    - If the input is already .gz and has a .tbi index, returns it.
+    - Otherwise, creates a sorted BED (if needed), BGZF-compresses it, and
+      creates a tabix index (preset="bed").
 
     Parameters
     ----------
-    str_df : pd.DataFrame
-        DataFrame with STR regions (from load_str_reference)
+    bed_path : str
+        Path to input BED file (.bed or .bed.gz).
+
+    Returns
+    -------
+    str
+        Path to the BGZF-compressed, tabix-indexed BED file (*.gz).
+
+    Notes
+    -----
+    - Tabix indexing requires the BED to be sorted by chromosome and start.
+    - This function uses `pysam.tabix_compress` and `pysam.tabix_index`.
+    """
+    bed_path = Path(str_path)
+    cache_dir_path = bed_path.parent
+
+    # If input is already gz + tbi, trust and return.
+    if bed_path.suffix == ".gz" and bed_path.exists() and is_valid_tabix(str(bed_path)):
+        return str(bed_path)
+
+    # Determine output names
+    # Use the base name without trailing .gz if present.
+    base_name = bed_path.name
+    if base_name.endswith(".gz"):
+        base_name = base_name[:-3]
+
+    sorted_bed = cache_dir_path / f"{base_name}.sorted"
+    gz_bed = cache_dir_path / f"{base_name}.sorted.gz"
+
+    # If cached gz + tbi exist, reuse.
+    if gz_bed.exists() and is_valid_tabix(str(gz_bed)):
+        return str(gz_bed)
+
+    # Ensure we have a sorted BED file to compress/index.
+    sort_bed_file(str(bed_path), str(sorted_bed))
+
+    # BGZF compress
+    pysam.tabix_compress(str(sorted_bed), str(gz_bed), force=True)
+
+    # Tabix index (BED preset expects chrom/start/end in the first columns)
+    pysam.tabix_index(str(gz_bed), preset="bed", force=True)
+
+    return str(gz_bed)
+
+
+def find_overlapping_str(
+    str_panel_gz: str,
+    chrom: str,
+    pos: int,
+    end: int,
+) -> Optional[Dict]:
+    """Find STR region overlapping with variant coordinates using tabix index.
+
+    Parameters
+    ----------
+    str_panel_gz : str
+        Path to BGZF-compressed, tabix-indexed STR reference file.
     chrom : str
-        Chromosome name
+        Chromosome name.
     pos : int
-        Variant start position (1-based)
+        Variant start position (1-based).
     end : int
-        Variant end position (1-based)
+        Variant end position (1-based).
 
     Returns
     -------
     Optional[Dict]
-        Dictionary with STR region data if overlap found, None otherwise
-        Contains keys: CHROM, START, END, PERIOD, RU, COUNT
+        Dictionary with STR region data if overlap found, None otherwise.
+        Keys: CHROM, START, END, PERIOD, RU, COUNT
     """
-    # Filter by chromosome
-    chrom_df = str_df[str_df["CHROM"] == chrom]
+    # Convert to tabix coordinate system: 0-based half-open
+    query_start = max(0, pos - 1)
+    query_end = end
 
-    if chrom_df.empty:
+    try:
+        tbx = pysam.TabixFile(str_panel_gz)
+
+        for row in tbx.fetch(chrom, query_start, query_end):
+            parts = row.rstrip("\n").split("\t")
+            if len(parts) < 5:
+                continue
+
+            try:
+                str_chrom = parts[0]
+                str_start = int(parts[1])
+                str_end = int(parts[2])
+                period = int(parts[3])
+                ru = parts[4]
+                count = int((str_end - str_start + 1) / period)
+            except ValueError:
+                continue
+
+            # Check true overlap in 1-based coordinates
+            if str_start < end and str_end >= pos:
+                result = {
+                    "CHROM": str_chrom,
+                    "START": str_start,
+                    "END": str_end,
+                    "PERIOD": period,
+                    "RU": ru,
+                    "COUNT": count,
+                }
+                return result
+
         return None
 
-    # Find overlapping regions
-    # Overlap occurs when: variant_end >= str_start AND variant_start <= str_end
-    overlapping = chrom_df[(chrom_df["START"] <= end) & (chrom_df["END"] >= pos)]
-
-    if overlapping.empty:
+    except ValueError:
+        # Chromosome not present in index
         return None
+    finally:
+        tbx.close()
 
-    # Return first overlapping region
-    return overlapping.iloc[0].to_dict()
 
-
-def get_str_at_position(str_df: pd.DataFrame, chrom: str, pos: int) -> Optional[Dict]:
-    """Get STR region containing a specific position.
+def get_str_at_position(
+    str_panel_gz: str,
+    chrom: str,
+    pos: int,
+) -> Optional[Dict]:
+    """Get STR region containing a specific position using tabix index.
 
     Parameters
     ----------
-    str_df : pd.DataFrame
-        DataFrame with STR regions (from load_str_reference)
+    str_panel_gz : str
+        Path to BGZF-compressed, tabix-indexed STR reference file.
     chrom : str
-        Chromosome name
+        Chromosome name.
     pos : int
-        Position to query (1-based)
+        Position to query (1-based).
 
     Returns
     -------
     Optional[Dict]
-        Dictionary with STR region data if position is within an STR, None otherwise
+        Dictionary with STR region data if position is within an STR, None otherwise.
     """
-    return find_overlapping_str(str_df, chrom, pos, pos)
+    return find_overlapping_str(str_panel_gz, chrom, pos, pos)

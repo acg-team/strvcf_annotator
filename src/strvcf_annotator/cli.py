@@ -95,6 +95,13 @@ Examples:
         ),
     )
     parser.add_argument(
+        "--jobs",
+        type=int,
+        help=(
+            "Number of parallel jobs to use for processing. Each job processes one VCF file. If not specified, the number of jobs is automatically determined based on CPU cores, number of files, and available RAM."
+        ),
+    )
+    parser.add_argument(
         "--mismatch-truth",
         choices=["panel", "vcf", "skip"],
         default="panel",
@@ -153,6 +160,7 @@ def main():
         somatic_mode = getattr(args, "somatic_mode", False)
         ignore_mismatch_warnings = getattr(args, "ignore_mismatch_warnings", False)
         mismatch_truth = getattr(args, "mismatch_truth", "panel")
+        jobs = getattr(args, "jobs", None)
         annotator = STRAnnotator(
             args.str_bed,
             somatic_mode=somatic_mode,
@@ -176,7 +184,7 @@ def main():
         elif args.input_dir:
             # Batch directory mode
             logger.info(f"Processing directory: {args.input_dir}")
-            annotator.process_directory(args.input_dir, args.output_dir)
+            annotator.process_directory(args.input_dir, args.output_dir, jobs=jobs)
             logger.info(f"Successfully processed all VCF files to {args.output_dir}")
 
         logger.info("Annotation complete!")

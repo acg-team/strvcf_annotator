@@ -2,17 +2,31 @@
 
 import os
 import tempfile
+from pathlib import Path
 
-import pandas as pd
 import pysam
 import pytest
 
 from strvcf_annotator.core.vcf_processor import (
     check_vcf_sorted,
+    estimate_ram_per_worker_bytes,
     generate_annotated_records,
+    get_available_ram_bytes,
     reset_and_sort_vcf,
 )
 from strvcf_annotator.parsers.generic import GenericParser
+
+
+@pytest.fixture
+def vcf_paths(data_dir):
+    """Return absolute paths to all shipped VCF test files."""
+    files = [
+        "test.vcf.gz",
+        "pindel_header.vcf",
+        "mutec2_indel.vcf.gz",
+        "TCGA-DC-6682.vcf",
+    ]
+    return [os.path.abspath(os.path.join(data_dir, f)) for f in files]
 
 
 @pytest.fixture
@@ -114,18 +128,37 @@ def unsorted_vcf_file(basic_vcf_header):
 
 
 @pytest.fixture
-def str_dataframe():
-    """Create a sample STR DataFrame for testing."""
-    return pd.DataFrame(
-        {
-            "CHROM": ["chr1", "chr1", "chr2"],
-            "START": [95, 195, 95],
-            "END": [115, 215, 115],
-            "PERIOD": [2, 3, 2],
-            "RU": ["AT", "CAG", "GC"],
-            "COUNT": [10, 7, 10],
-        }
-    )
+def str_panel_tabix():
+    """Create a small tabix-indexed STR panel for tests.
+
+    Returns
+    -------
+    str
+        Path to bgzip-compressed, tabix-indexed STR panel.
+    """
+    content = """chr1\t95\t115\t2\tAT\t10
+chr1\t195\t215\t3\tCAG\t7
+chr2\t95\t115\t2\tGC\t10
+"""
+
+    with tempfile.TemporaryDirectory() as tmp:
+        bed_path = Path(tmp) / "str_panel.bed"
+        bed_path.write_text(content, encoding="utf-8")
+
+        # Sort to guarantee tabix compatibility
+        sorted_path = Path(tmp) / "str_panel.sorted.bed"
+        lines = sorted(
+            [l.strip() for l in content.strip().splitlines()],
+            key=lambda x: (x.split("\t")[0], int(x.split("\t")[1])),
+        )
+        sorted_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+        gz_path = Path(tmp) / "str_panel.sorted.bed.gz"
+
+        pysam.tabix_compress(str(sorted_path), str(gz_path), force=True)
+        pysam.tabix_index(str(gz_path), preset="bed", force=True)
+
+        yield str(gz_path)
 
 
 class TestCheckVCFSorted:
@@ -315,12 +348,12 @@ class TestResetAndSortVCF:
 class TestGenerateAnnotatedRecords:
     """Tests for generate_annotated_records function."""
 
-    def test_returns_iterator(self, sorted_vcf_file, str_dataframe):
+    def test_returns_iterator(self, sorted_vcf_file, str_panel_tabix):
         """Test that function returns an iterator."""
         vcf_in = pysam.VariantFile(sorted_vcf_file)
         parser = GenericParser()
 
-        result = generate_annotated_records(vcf_in, str_dataframe, parser)
+        result = generate_annotated_records(vcf_in, str_panel_tabix, parser)
 
         # Should be an iterator
         assert hasattr(result, "__iter__")
@@ -328,12 +361,12 @@ class TestGenerateAnnotatedRecords:
 
         vcf_in.close()
 
-    def test_yields_variant_records(self, sorted_vcf_file, str_dataframe):
+    def test_yields_variant_records(self, sorted_vcf_file, str_panel_tabix):
         """Test that iterator yields VariantRecord objects."""
         vcf_in = pysam.VariantFile(sorted_vcf_file)
         parser = GenericParser()
 
-        records = list(generate_annotated_records(vcf_in, str_dataframe, parser))
+        records = list(generate_annotated_records(vcf_in, str_panel_tabix, parser))
 
         if len(records) > 0:
             assert all(isinstance(r, pysam.VariantRecord) for r in records)
@@ -342,54 +375,54 @@ class TestGenerateAnnotatedRecords:
 
     def test_filters_non_overlapping_variants(self, sorted_vcf_file):
         """Test that variants outside STR regions are filtered."""
+
         vcf_in = pysam.VariantFile(sorted_vcf_file)
         parser = GenericParser()
 
-        # Create STR dataframe with no overlap
-        str_df = pd.DataFrame(
-            {
-                "CHROM": ["chr10"],
-                "START": [1000],
-                "END": [1100],
-                "PERIOD": [2],
-                "RU": ["AT"],
-                "COUNT": [50],
-            }
-        )
+        # Create a tabix-indexed STR panel with no overlap to the VCF (chr10 only)
+        content = "chr10\t1000\t1100\t2\tAT\t50\n"
 
-        records = list(generate_annotated_records(vcf_in, str_df, parser))
+        with tempfile.TemporaryDirectory() as tmp:
+            bed_path = Path(tmp) / "no_overlap.bed"
+            bed_path.write_text(content, encoding="utf-8")
 
-        # Should yield no records (no overlap)
-        assert len(records) == 0
+            gz_path = Path(tmp) / "no_overlap.bed.gz"
+            pysam.tabix_compress(str(bed_path), str(gz_path), force=True)
+            pysam.tabix_index(str(gz_path), preset="bed", force=True)
+
+            records = list(generate_annotated_records(vcf_in, str(gz_path), parser))
+
+            # Should yield no records (no overlap)
+            assert len(records) == 0
 
         vcf_in.close()
 
-    def test_handles_unsorted_vcf(self, unsorted_vcf_file, str_dataframe):
+    def test_handles_unsorted_vcf(self, unsorted_vcf_file, str_panel_tabix):
         """Test that function handles unsorted VCF by sorting it."""
         vcf_in = pysam.VariantFile(unsorted_vcf_file)
         parser = GenericParser()
 
         # Should not raise an error
-        records = list(generate_annotated_records(vcf_in, str_dataframe, parser))
+        records = list(generate_annotated_records(vcf_in, str_panel_tabix, parser))
 
         # Records should be processed (may be 0 if no overlaps)
         assert isinstance(records, list)
 
         vcf_in.close()
 
-    def test_uses_generic_parser_by_default(self, sorted_vcf_file, str_dataframe):
+    def test_uses_generic_parser_by_default(self, sorted_vcf_file, str_panel_tabix):
         """Test that GenericParser is used when parser=None."""
         vcf_in = pysam.VariantFile(sorted_vcf_file)
 
         # Call without parser
-        records = list(generate_annotated_records(vcf_in, str_dataframe, parser=None))
+        records = list(generate_annotated_records(vcf_in, str_panel_tabix, parser=None))
 
         # Should work without error
         assert isinstance(records, list)
 
         vcf_in.close()
 
-    def test_empty_vcf_returns_no_records(self, basic_vcf_header, str_dataframe):
+    def test_empty_vcf_returns_no_records(self, basic_vcf_header, str_panel_tabix):
         """Test that empty VCF yields no records."""
         temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".vcf", delete=False)
         temp_file.close()
@@ -402,7 +435,7 @@ class TestGenerateAnnotatedRecords:
             vcf_in = pysam.VariantFile(temp_file.name)
             parser = GenericParser()
 
-            records = list(generate_annotated_records(vcf_in, str_dataframe, parser))
+            records = list(generate_annotated_records(vcf_in, str_panel_tabix, parser))
 
             assert len(records) == 0
 
@@ -410,16 +443,107 @@ class TestGenerateAnnotatedRecords:
         finally:
             os.unlink(temp_file.name)
 
-    def test_empty_str_dataframe_returns_no_records(self, sorted_vcf_file):
-        """Test that empty STR DataFrame yields no records."""
-        vcf_in = pysam.VariantFile(sorted_vcf_file)
-        parser = GenericParser()
+    def test_empty_str_panel_tabix_returns_no_records(self, sorted_vcf_file):
+        """Test that empty STR panel (no overlapping loci) yields no records."""
 
-        # Empty STR dataframe
-        empty_str_df = pd.DataFrame(columns=["CHROM", "START", "END", "PERIOD", "RU", "COUNT"])
+        # Create a panel with one dummy locus on a chromosome not present in VCF
+        content = "chrUn\t1\t10\t2\tAT\t5\n"
 
-        records = list(generate_annotated_records(vcf_in, empty_str_df, parser))
+        with tempfile.TemporaryDirectory() as tmp:
+            bed_path = Path(tmp) / "empty_panel.bed"
+            bed_path.write_text(content, encoding="utf-8")
 
-        assert len(records) == 0
+            gz_path = Path(tmp) / "empty_panel.bed.gz"
+            pysam.tabix_compress(str(bed_path), str(gz_path), force=True)
+            pysam.tabix_index(str(gz_path), preset="bed", force=True)
 
-        vcf_in.close()
+            vcf_in = pysam.VariantFile(sorted_vcf_file)
+            parser = GenericParser()
+
+            records = list(generate_annotated_records(vcf_in, str(gz_path), parser))
+
+            assert len(records) == 0
+
+            vcf_in.close()
+
+
+class TestGetAvailableRamBytes:
+    """Tests for get_available_ram_bytes function."""
+
+    def test_returns_int(self):
+        """Test that function returns an integer."""
+        result = get_available_ram_bytes()
+        assert isinstance(result, int)
+
+    # @TODO fix
+    # def test_fake_memory(self, monkeypatch):
+    #     """Test that psutil branch returns fake available RAM."""
+    #     fake_psutil = types.ModuleType("psutil")
+
+    #     class FakeVMem:
+    #         available = 123456789
+
+    #     def virtual_memory():
+    #         return FakeVMem()
+
+    #     fake_psutil.virtual_memory = virtual_memory
+
+    #     real_import = builtins.__import__
+
+    #     def import_hook(name, globals=None, locals=None, fromlist=(), level=0):
+    #         if name == "psutil":
+    #             return fake_psutil
+    #         return real_import(name, globals, locals, fromlist, level)
+
+    #     monkeypatch.setattr(builtins, "__import__", import_hook)
+
+    #     result = get_available_ram_bytes()
+    #     assert result == 123456789
+
+
+class TestEstimateRamPerWorkerBytes:
+    """Tests for estimate_ram_per_worker_bytes function."""
+
+    def test_empty_list_returns_minimum(self):
+        """Test that empty input returns a safe minimum estimate."""
+        result = estimate_ram_per_worker_bytes([])
+        assert result == int(1 * 1024**3)  # 1 GB
+
+    def test_uses_largest_file_size(self, vcf_paths):
+        """Test that estimate is based on the largest file size among inputs."""
+        sizes = {p: os.path.getsize(p) for p in vcf_paths}
+        max_path = max(sizes, key=sizes.get)
+        max_size = sizes[max_path]
+
+        fixed_overhead = 700 * 1024**2
+        expansion_factor = 5 if max_path.endswith(".gz") else 2
+
+        expected = fixed_overhead + expansion_factor * max_size
+        expected = min(max(expected, 1 * 1024**3), 120 * 1024**3)
+
+        result = estimate_ram_per_worker_bytes(vcf_paths)
+        assert result == int(expected)
+
+    def test_single_file_plain_vcf(self, data_dir):
+        """Test estimate for a single plain VCF."""
+        path = os.path.abspath(os.path.join(data_dir, "TCGA-DC-6682.vcf"))
+        size = os.path.getsize(path)
+
+        fixed_overhead = 700 * 1024**2
+        expected = fixed_overhead + 2 * size
+        expected = min(max(expected, 1 * 1024**3), 120 * 1024**3)
+
+        result = estimate_ram_per_worker_bytes([path])
+        assert result == int(expected)
+
+    def test_single_file_gz_vcf(self, data_dir):
+        """Test estimate for a single gzipped VCF."""
+        path = os.path.abspath(os.path.join(data_dir, "test.vcf.gz"))
+        size = os.path.getsize(path)
+
+        fixed_overhead = 700 * 1024**2
+        expected = fixed_overhead + 5 * size
+        expected = min(max(expected, 1 * 1024**3), 120 * 1024**3)
+
+        result = estimate_ram_per_worker_bytes([path])
+        assert result == int(expected)

@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-02-25
+
+* **Tabix-based STR panel handling**
+
+  * STR reference is no longer loaded fully into memory.
+  * The panel is now prepared automatically:
+
+    * sorted by genomic chromosome order,
+    * BGZF-compressed,
+    * tabix-indexed.
+  * During annotation, STR regions are queried directly from the tabix index,
+    enabling fast genomic lookups and significantly reducing memory usage.
+  * Improves scalability and allows safe multi-worker execution.
+
+* **Parallel directory processing (`jobs`)**
+
+  * Added new `jobs` option to control parallel annotation of VCF files.
+  * Each worker processes one VCF file independently.
+  * If `jobs` is not provided, the tool now estimates an optimal number of workers
+    based on available CPU cores and system memory.
+  * This can substantially speed up processing of large VCF directories.
+
+
 ## [0.3.0] - 2026-01-12
 - **Mismatch handling between VCF and STR panel**
   * Added support for cases where the VCF reference does not exactly match the STR panel.

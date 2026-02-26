@@ -1,7 +1,7 @@
 project = 'strvcf_annotator'
 copyright = '2026, Olesia Kondrateva'
 author = 'Olesia Kondrateva'
-release = '0.3.0'
+release = '1.0.0'
 
 extensions = [
     "sphinx.ext.autodoc",

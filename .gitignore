@@ -13,3 +13,4 @@ docs/build
 dist
 log*
 coverage.xml
+tests/data/GRCh38_repeats.bed.sorted*
