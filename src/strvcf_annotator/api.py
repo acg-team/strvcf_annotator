@@ -55,8 +55,8 @@ class STRAnnotator:
     ----------
     str_bed_path : str
         Path to STR BED file
-    str_df : pd.DataFrame
-        Loaded STR reference data
+    str_panel_gz : str
+        Path to BGZF-compressed, tabix-indexed STR reference file.
     parser : BaseVCFParser
         Parser for genotype extraction
     somatic_mode : bool

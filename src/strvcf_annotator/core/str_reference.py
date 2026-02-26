@@ -99,7 +99,7 @@ def sort_bed_file(
     return output_path
 
 
-def load_str_reference(str_path: str) -> pd.DataFrame:
+def load_str_reference(str_path: str) -> str:
     """Ensure a BED file is BGZF-compressed and tabix-indexed.
 
     This function:
@@ -198,21 +198,20 @@ def find_overlapping_str(
                 str_end = int(parts[2])
                 period = int(parts[3])
                 ru = parts[4]
-                count = int(parts[5]) if len(parts) > 5 else None
+                count = (str_end - str_start + 1) / period
             except ValueError:
                 continue
 
             # Check true overlap in 1-based coordinates
-            if str_start <= end and str_end >= pos:
+            if str_start < end and str_end >= pos:
                 result = {
                     "CHROM": str_chrom,
                     "START": str_start,
                     "END": str_end,
                     "PERIOD": period,
                     "RU": ru,
+                    "COUNT": count,
                 }
-                if count is not None:
-                    result["COUNT"] = count
                 return result
 
         return None
@@ -220,6 +219,8 @@ def find_overlapping_str(
     except ValueError:
         # Chromosome not present in index
         return None
+    finally:
+        tbx.close()
 
 
 def get_str_at_position(

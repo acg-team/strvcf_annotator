@@ -4,7 +4,6 @@ import os
 import tempfile
 from pathlib import Path
 
-import pandas as pd
 import pysam
 import pytest
 

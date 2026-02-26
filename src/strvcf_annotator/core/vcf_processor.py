@@ -357,7 +357,6 @@ def annotate_one_vcf(task: Tuple[str, str]) -> str:
     -----
     - Expects STR reference (STR_DF) and worker configuration (WORKER_CONFIG)
       to be initialized once per worker via `worker_init`.
-    - Instantiates a parser inside the worker to avoid pickling issues.
     """
     global WORKER_CONFIG
 
