@@ -378,9 +378,11 @@ class STRAnnotator:
 
             try:
                 chrom = parts[0]
+                start = int(parts[1])
+                end = int(parts[2])
                 period = int(parts[3])
                 ru = parts[4]
-                count = int(parts[5]) if len(parts) > 5 else None
+                count = int((end - start + 1) / period)
             except ValueError:
                 continue
 
@@ -388,8 +390,7 @@ class STRAnnotator:
             chromosomes.add(chrom)
             repeat_units.add(ru)
             period_counter[period] += 1
-            if count is not None:
-                counts.append(count)
+            counts.append(count)
 
         tbx.close()
 

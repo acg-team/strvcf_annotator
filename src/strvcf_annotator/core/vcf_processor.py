@@ -225,7 +225,7 @@ def generate_annotated_records(
                         "PERIOD": int(parts[3]),
                         "RU": parts[4],
                     }
-                    row["COUNT"] = (row["END"] - row["START"] + 1) / row["PERIOD"]
+                    row["COUNT"] = int((row["END"] - row["START"] + 1) / row["PERIOD"])
                     return row
                 except ValueError:
                     return None

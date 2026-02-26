@@ -198,7 +198,7 @@ def find_overlapping_str(
                 str_end = int(parts[2])
                 period = int(parts[3])
                 ru = parts[4]
-                count = (str_end - str_start + 1) / period
+                count = int((str_end - str_start + 1) / period)
             except ValueError:
                 continue
 
