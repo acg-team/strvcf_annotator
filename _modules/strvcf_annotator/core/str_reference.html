@@ -5,16 +5,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>strvcf_annotator.core.str_reference &mdash; strvcf_annotator 0.3.0 documentation</title>
+  <title>strvcf_annotator.core.str_reference &mdash; strvcf_annotator 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=e259d695"></script>
-      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -73,126 +73,265 @@
   <h1>Source code for strvcf_annotator.core.str_reference</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;STR reference management for BED file loading and region lookups.&quot;&quot;&quot;</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pysam</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils.vcf_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">chrom_to_order</span>
 
 
-<div class="viewcode-block" id="load_str_reference">
-<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.str_reference.load_str_reference">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">load_str_reference</span><span class="p">(</span><span class="n">str_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load STR reference data from BED file.</span>
+<div class="viewcode-block" id="is_valid_tabix">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.str_reference.is_valid_tabix">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_valid_tabix</span><span class="p">(</span><span class="n">gz_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check that a BGZF file has a valid tabix index.</span>
 
-<span class="sd">    Loads a BED file containing STR (Short Tandem Repeat) regions and converts</span>
-<span class="sd">    coordinates from 0-based BED format to 1-based VCF format. Calculates the</span>
-<span class="sd">    number of repeat units for each region.</span>
+<span class="sd">    Returns True only if:</span>
+<span class="sd">    - .tbi exists</span>
+<span class="sd">    - pysam can open the file</span>
+<span class="sd">    - index is readable</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tbi_path</span> <span class="o">=</span> <span class="n">gz_path</span> <span class="o">+</span> <span class="s2">&quot;.tbi&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">gz_path</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">tbi_path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">tbx</span> <span class="o">=</span> <span class="n">pysam</span><span class="o">.</span><span class="n">TabixFile</span><span class="p">(</span><span class="n">gz_path</span><span class="p">)</span>
+        <span class="c1"># Accessing contigs forces index parsing</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="n">tbx</span><span class="o">.</span><span class="n">contigs</span>
+        <span class="n">tbx</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+
+<div class="viewcode-block" id="sort_bed_file">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.str_reference.sort_bed_file">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">sort_bed_file</span><span class="p">(</span>
+    <span class="n">bed_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">chrom_col</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">start_col</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sort a BED-like file by chromosome and start coordinate.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    str_path : str</span>
-<span class="sd">        Path to BED file with STR regions</span>
+<span class="sd">    bed_path : str</span>
+<span class="sd">        Path to input BED file (tab-delimited).</span>
+<span class="sd">    output_path : str</span>
+<span class="sd">        Path to write the sorted BED file.</span>
+<span class="sd">    chrom_col : int, optional</span>
+<span class="sd">        Zero-based column index for chromosome. Default is 0.</span>
+<span class="sd">    start_col : int, optional</span>
+<span class="sd">        Zero-based column index for start coordinate. Default is 1.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    pd.DataFrame</span>
-<span class="sd">        DataFrame with columns: CHROM, START, END, PERIOD, RU, COUNT</span>
-<span class="sd">        - CHROM: Chromosome name</span>
-<span class="sd">        - START: 1-based start position (converted from BED 0-based)</span>
-<span class="sd">        - END: 1-based end position</span>
-<span class="sd">        - PERIOD: Length of repeat unit</span>
-<span class="sd">        - RU: Repeat unit sequence</span>
-<span class="sd">        - COUNT: Number of repeat units in the region</span>
+<span class="sd">    str</span>
+<span class="sd">        Path to the sorted BED file.</span>
 
 <span class="sd">    Notes</span>
 <span class="sd">    -----</span>
-<span class="sd">    BED files use 0-based coordinates, but VCF files use 1-based coordinates.</span>
-<span class="sd">    This function converts START positions by adding 1. END positions are kept</span>
-<span class="sd">    as-is since BED END is exclusive and VCF END is inclusive.</span>
+<span class="sd">    - This function loads the BED into memory via pandas. For extremely large</span>
+<span class="sd">      BED files, consider an external sort.</span>
+<span class="sd">    - Sorting is lexicographic by chromosome, then numeric by start.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">str_path</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-    <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;CHROM&quot;</span><span class="p">,</span> <span class="s2">&quot;START&quot;</span><span class="p">,</span> <span class="s2">&quot;END&quot;</span><span class="p">,</span> <span class="s2">&quot;PERIOD&quot;</span><span class="p">,</span> <span class="s2">&quot;RU&quot;</span><span class="p">]</span>
+    <span class="n">bed_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">bed_path</span><span class="p">)</span>
+    <span class="n">output_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span>
 
-    <span class="c1"># Convert from 0-based BED to 1-based VCF coordinates</span>
-    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;START&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;START&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
+        <span class="n">bed_path</span><span class="p">,</span>
+        <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">comment</span><span class="o">=</span><span class="s2">&quot;#&quot;</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="p">{</span><span class="n">chrom_col</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+    <span class="p">)</span>
 
-    <span class="c1"># Calculate number of repeat units</span>
-    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;COUNT&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;END&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;START&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;PERIOD&quot;</span><span class="p">]</span>
+    <span class="c1"># Ensure start is numeric</span>
+    <span class="n">df</span><span class="p">[</span><span class="n">start_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">start_col</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;int64&quot;</span><span class="p">)</span>
 
-    <span class="c1"># Add chromosome order column for proper sorting</span>
-    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;CHROM_ORDER&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;CHROM&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">chrom_to_order</span><span class="p">)</span>
+    <span class="c1"># Compute genomic order</span>
+    <span class="n">chrom_series</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">chrom_col</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;string&quot;</span><span class="p">)</span>
+    <span class="n">chrom_order</span> <span class="o">=</span> <span class="n">chrom_series</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">chrom_to_order</span><span class="p">)</span>
 
-    <span class="c1"># Sort by chromosome (natural order) and position for efficient lookups</span>
-    <span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;CHROM_ORDER&quot;</span><span class="p">,</span> <span class="s2">&quot;START&quot;</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="s2">&quot;CHROM_ORDER&quot;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">df</span></div>
+    <span class="c1"># If unknown chromosomes appear, push them to the end</span>
+    <span class="n">chrom_order</span> <span class="o">=</span> <span class="n">chrom_order</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="mi">9</span><span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">_chrom_order</span><span class="o">=</span><span class="n">chrom_order</span><span class="p">)</span>
+
+    <span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span>
+        <span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;_chrom_order&quot;</span><span class="p">,</span> <span class="n">start_col</span><span class="p">],</span>
+        <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;mergesort&quot;</span><span class="p">,</span>  <span class="c1"># stable sort</span>
+        <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;_chrom_order&quot;</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">Path</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">output_path</span></div>
+
+
+
+<div class="viewcode-block" id="load_str_reference">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.str_reference.load_str_reference">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_str_reference</span><span class="p">(</span><span class="n">str_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensure a BED file is BGZF-compressed and tabix-indexed.</span>
+
+<span class="sd">    This function:</span>
+<span class="sd">    - Accepts a BED path (.bed or .bed.gz).</span>
+<span class="sd">    - If the input is already .gz and has a .tbi index, returns it.</span>
+<span class="sd">    - Otherwise, creates a sorted BED (if needed), BGZF-compresses it, and</span>
+<span class="sd">      creates a tabix index (preset=&quot;bed&quot;).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    bed_path : str</span>
+<span class="sd">        Path to input BED file (.bed or .bed.gz).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        Path to the BGZF-compressed, tabix-indexed BED file (*.gz).</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    - Tabix indexing requires the BED to be sorted by chromosome and start.</span>
+<span class="sd">    - This function uses `pysam.tabix_compress` and `pysam.tabix_index`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">bed_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">str_path</span><span class="p">)</span>
+    <span class="n">cache_dir_path</span> <span class="o">=</span> <span class="n">bed_path</span><span class="o">.</span><span class="n">parent</span>
+
+    <span class="c1"># If input is already gz + tbi, trust and return.</span>
+    <span class="k">if</span> <span class="n">bed_path</span><span class="o">.</span><span class="n">suffix</span> <span class="o">==</span> <span class="s2">&quot;.gz&quot;</span> <span class="ow">and</span> <span class="n">bed_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="n">is_valid_tabix</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">bed_path</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">bed_path</span><span class="p">)</span>
+
+    <span class="c1"># Determine output names</span>
+    <span class="c1"># Use the base name without trailing .gz if present.</span>
+    <span class="n">base_name</span> <span class="o">=</span> <span class="n">bed_path</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">if</span> <span class="n">base_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.gz&quot;</span><span class="p">):</span>
+        <span class="n">base_name</span> <span class="o">=</span> <span class="n">base_name</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+
+    <span class="n">sorted_bed</span> <span class="o">=</span> <span class="n">cache_dir_path</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_name</span><span class="si">}</span><span class="s2">.sorted&quot;</span>
+    <span class="n">gz_bed</span> <span class="o">=</span> <span class="n">cache_dir_path</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_name</span><span class="si">}</span><span class="s2">.sorted.gz&quot;</span>
+
+    <span class="c1"># If cached gz + tbi exist, reuse.</span>
+    <span class="k">if</span> <span class="n">gz_bed</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="n">is_valid_tabix</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">gz_bed</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">gz_bed</span><span class="p">)</span>
+
+    <span class="c1"># Ensure we have a sorted BED file to compress/index.</span>
+    <span class="n">sort_bed_file</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">bed_path</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">sorted_bed</span><span class="p">))</span>
+
+    <span class="c1"># BGZF compress</span>
+    <span class="n">pysam</span><span class="o">.</span><span class="n">tabix_compress</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">sorted_bed</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">gz_bed</span><span class="p">),</span> <span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Tabix index (BED preset expects chrom/start/end in the first columns)</span>
+    <span class="n">pysam</span><span class="o">.</span><span class="n">tabix_index</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">gz_bed</span><span class="p">),</span> <span class="n">preset</span><span class="o">=</span><span class="s2">&quot;bed&quot;</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">gz_bed</span><span class="p">)</span></div>
 
 
 
 <div class="viewcode-block" id="find_overlapping_str">
 <a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.str_reference.find_overlapping_str">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">find_overlapping_str</span><span class="p">(</span><span class="n">str_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">chrom</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">end</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find STR region overlapping with variant coordinates.</span>
-
-<span class="sd">    Searches for an STR region that overlaps with the given variant position.</span>
-<span class="sd">    Uses efficient binary search on sorted DataFrame.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">find_overlapping_str</span><span class="p">(</span>
+    <span class="n">str_panel_gz</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">chrom</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">pos</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">end</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find STR region overlapping with variant coordinates using tabix index.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    str_df : pd.DataFrame</span>
-<span class="sd">        DataFrame with STR regions (from load_str_reference)</span>
+<span class="sd">    str_panel_gz : str</span>
+<span class="sd">        Path to BGZF-compressed, tabix-indexed STR reference file.</span>
 <span class="sd">    chrom : str</span>
-<span class="sd">        Chromosome name</span>
+<span class="sd">        Chromosome name.</span>
 <span class="sd">    pos : int</span>
-<span class="sd">        Variant start position (1-based)</span>
+<span class="sd">        Variant start position (1-based).</span>
 <span class="sd">    end : int</span>
-<span class="sd">        Variant end position (1-based)</span>
+<span class="sd">        Variant end position (1-based).</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    Optional[Dict]</span>
-<span class="sd">        Dictionary with STR region data if overlap found, None otherwise</span>
-<span class="sd">        Contains keys: CHROM, START, END, PERIOD, RU, COUNT</span>
+<span class="sd">        Dictionary with STR region data if overlap found, None otherwise.</span>
+<span class="sd">        Keys: CHROM, START, END, PERIOD, RU, COUNT</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Filter by chromosome</span>
-    <span class="n">chrom_df</span> <span class="o">=</span> <span class="n">str_df</span><span class="p">[</span><span class="n">str_df</span><span class="p">[</span><span class="s2">&quot;CHROM&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">chrom</span><span class="p">]</span>
+    <span class="c1"># Convert to tabix coordinate system: 0-based half-open</span>
+    <span class="n">query_start</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">pos</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">query_end</span> <span class="o">=</span> <span class="n">end</span>
 
-    <span class="k">if</span> <span class="n">chrom_df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">tbx</span> <span class="o">=</span> <span class="n">pysam</span><span class="o">.</span><span class="n">TabixFile</span><span class="p">(</span><span class="n">str_panel_gz</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">tbx</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">chrom</span><span class="p">,</span> <span class="n">query_start</span><span class="p">,</span> <span class="n">query_end</span><span class="p">):</span>
+            <span class="n">parts</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">str_chrom</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">str_start</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">str_end</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+                <span class="n">period</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+                <span class="n">ru</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+                <span class="n">count</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">str_end</span> <span class="o">-</span> <span class="n">str_start</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">period</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># Check true overlap in 1-based coordinates</span>
+            <span class="k">if</span> <span class="n">str_start</span> <span class="o">&lt;</span> <span class="n">end</span> <span class="ow">and</span> <span class="n">str_end</span> <span class="o">&gt;=</span> <span class="n">pos</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;CHROM&quot;</span><span class="p">:</span> <span class="n">str_chrom</span><span class="p">,</span>
+                    <span class="s2">&quot;START&quot;</span><span class="p">:</span> <span class="n">str_start</span><span class="p">,</span>
+                    <span class="s2">&quot;END&quot;</span><span class="p">:</span> <span class="n">str_end</span><span class="p">,</span>
+                    <span class="s2">&quot;PERIOD&quot;</span><span class="p">:</span> <span class="n">period</span><span class="p">,</span>
+                    <span class="s2">&quot;RU&quot;</span><span class="p">:</span> <span class="n">ru</span><span class="p">,</span>
+                    <span class="s2">&quot;COUNT&quot;</span><span class="p">:</span> <span class="n">count</span><span class="p">,</span>
+                <span class="p">}</span>
+                <span class="k">return</span> <span class="n">result</span>
+
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="c1"># Find overlapping regions</span>
-    <span class="c1"># Overlap occurs when: variant_end &gt;= str_start AND variant_start &lt;= str_end</span>
-    <span class="n">overlapping</span> <span class="o">=</span> <span class="n">chrom_df</span><span class="p">[(</span><span class="n">chrom_df</span><span class="p">[</span><span class="s2">&quot;START&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">end</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">chrom_df</span><span class="p">[</span><span class="s2">&quot;END&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">pos</span><span class="p">)]</span>
-
-    <span class="k">if</span> <span class="n">overlapping</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="c1"># Chromosome not present in index</span>
         <span class="k">return</span> <span class="kc">None</span>
-
-    <span class="c1"># Return first overlapping region</span>
-    <span class="k">return</span> <span class="n">overlapping</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span></div>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">tbx</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
 
 <div class="viewcode-block" id="get_str_at_position">
 <a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.str_reference.get_str_at_position">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_str_at_position</span><span class="p">(</span><span class="n">str_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">chrom</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get STR region containing a specific position.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_str_at_position</span><span class="p">(</span>
+    <span class="n">str_panel_gz</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">chrom</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">pos</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get STR region containing a specific position using tabix index.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    str_df : pd.DataFrame</span>
-<span class="sd">        DataFrame with STR regions (from load_str_reference)</span>
+<span class="sd">    str_panel_gz : str</span>
+<span class="sd">        Path to BGZF-compressed, tabix-indexed STR reference file.</span>
 <span class="sd">    chrom : str</span>
-<span class="sd">        Chromosome name</span>
+<span class="sd">        Chromosome name.</span>
 <span class="sd">    pos : int</span>
-<span class="sd">        Position to query (1-based)</span>
+<span class="sd">        Position to query (1-based).</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    Optional[Dict]</span>
-<span class="sd">        Dictionary with STR region data if position is within an STR, None otherwise</span>
+<span class="sd">        Dictionary with STR region data if position is within an STR, None otherwise.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">find_overlapping_str</span><span class="p">(</span><span class="n">str_df</span><span class="p">,</span> <span class="n">chrom</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">find_overlapping_str</span><span class="p">(</span><span class="n">str_panel_gz</span><span class="p">,</span> <span class="n">chrom</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span></div>
 
 </pre></div>
 

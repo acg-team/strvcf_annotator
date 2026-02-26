@@ -5,16 +5,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; strvcf_annotator 0.3.0 documentation</title>
+  <title>Index &mdash; strvcf_annotator 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e259d695"></script>
-      <script src="_static/doctools.js?v=9bcbadda"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="#" />
     <link rel="search" title="Search" href="search.html" /> 
@@ -88,11 +88,14 @@
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#V"><strong>V</strong></a>
+ | <a href="#W"><strong>W</strong></a>
  
 </div>
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#strvcf_annotator.core.vcf_processor.annotate_one_vcf">annotate_one_vcf() (in module strvcf_annotator.core.vcf_processor)</a>
+</li>
       <li><a href="main.html#strvcf_annotator.api.annotate_vcf">annotate_vcf() (in module strvcf_annotator.api)</a>
 </li>
       <li><a href="main.html#strvcf_annotator.api.STRAnnotator.annotate_vcf_file">annotate_vcf_file() (strvcf_annotator.api.STRAnnotator method)</a>
@@ -125,9 +128,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#strvcf_annotator.core.vcf_processor.check_vcf_sorted">check_vcf_sorted() (in module strvcf_annotator.core.vcf_processor)</a>
 </li>
+      <li><a href="api.html#strvcf_annotator.utils.vcf_utils.chrom_to_order">chrom_to_order() (in module strvcf_annotator.utils.vcf_utils)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#strvcf_annotator.utils.vcf_utils.chrom_to_order">chrom_to_order() (in module strvcf_annotator.utils.vcf_utils)</a>
+      <li><a href="api.html#strvcf_annotator.core.vcf_processor.compute_jobs_auto">compute_jobs_auto() (in module strvcf_annotator.core.vcf_processor)</a>
 </li>
       <li><a href="api.html#strvcf_annotator.core.repeat_utils.count_repeat_units">count_repeat_units() (in module strvcf_annotator.core.repeat_utils)</a>
 </li>
@@ -137,6 +142,8 @@
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#strvcf_annotator.core.vcf_processor.estimate_ram_per_worker_bytes">estimate_ram_per_worker_bytes() (in module strvcf_annotator.core.vcf_processor)</a>
+</li>
       <li><a href="api.html#strvcf_annotator.parsers.base.BaseVCFParser.extract_info">extract_info() (strvcf_annotator.parsers.base.BaseVCFParser method)</a>
 
       <ul>
@@ -164,6 +171,8 @@
       <li><a href="api.html#strvcf_annotator.core.vcf_processor.generate_annotated_records">generate_annotated_records() (in module strvcf_annotator.core.vcf_processor)</a>
 </li>
       <li><a href="api.html#strvcf_annotator.parsers.generic.GenericParser">GenericParser (class in strvcf_annotator.parsers.generic)</a>
+</li>
+      <li><a href="api.html#strvcf_annotator.core.vcf_processor.get_available_ram_bytes">get_available_ram_bytes() (in module strvcf_annotator.core.vcf_processor)</a>
 </li>
       <li><a href="api.html#strvcf_annotator.parsers.base.BaseVCFParser.get_genotype">get_genotype() (strvcf_annotator.parsers.base.BaseVCFParser method)</a>
 
@@ -207,7 +216,13 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#id2">ignore_mismatch_warnings (strvcf_annotator.core.vcf_processor.WorkerConfig attribute)</a>, <a href="api.html#strvcf_annotator.core.vcf_processor.WorkerConfig.ignore_mismatch_warnings">[1]</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#strvcf_annotator.core.repeat_utils.is_perfect_repeat">is_perfect_repeat() (in module strvcf_annotator.core.repeat_utils)</a>
+</li>
+      <li><a href="api.html#strvcf_annotator.core.str_reference.is_valid_tabix">is_valid_tabix() (in module strvcf_annotator.core.str_reference)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -224,6 +239,8 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#strvcf_annotator.core.annotation.make_modified_header">make_modified_header() (in module strvcf_annotator.core.annotation)</a>
+</li>
+      <li><a href="api.html#id3">mismatch_truth (strvcf_annotator.core.vcf_processor.WorkerConfig attribute)</a>, <a href="api.html#strvcf_annotator.core.vcf_processor.WorkerConfig.mismatch_truth">[1]</a>
 </li>
       <li>
     module
@@ -267,7 +284,11 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="main.html#strvcf_annotator.api.STRAnnotator.parser">parser (strvcf_annotator.api.STRAnnotator attribute)</a>
+
+      <ul>
+        <li><a href="api.html#strvcf_annotator.core.vcf_processor.WorkerConfig.parser">(strvcf_annotator.core.vcf_processor.WorkerConfig attribute)</a>
 </li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#strvcf_annotator.core.vcf_processor.process_directory">process_directory() (in module strvcf_annotator.core.vcf_processor)</a>
@@ -293,11 +314,21 @@
       <li><a href="api.html#strvcf_annotator.core.annotation.should_skip_genotype">should_skip_genotype() (in module strvcf_annotator.core.annotation)</a>
 </li>
       <li><a href="main.html#strvcf_annotator.api.STRAnnotator.somatic_mode">somatic_mode (strvcf_annotator.api.STRAnnotator attribute)</a>
+
+      <ul>
+        <li><a href="api.html#id1">(strvcf_annotator.core.vcf_processor.WorkerConfig attribute)</a>, <a href="api.html#strvcf_annotator.core.vcf_processor.WorkerConfig.somatic_mode">[1]</a>
+</li>
+      </ul></li>
+      <li><a href="api.html#strvcf_annotator.core.str_reference.sort_bed_file">sort_bed_file() (in module strvcf_annotator.core.str_reference)</a>
 </li>
       <li><a href="main.html#strvcf_annotator.api.STRAnnotator.str_bed_path">str_bed_path (strvcf_annotator.api.STRAnnotator attribute)</a>
 </li>
-      <li><a href="main.html#strvcf_annotator.api.STRAnnotator.str_df">str_df (strvcf_annotator.api.STRAnnotator attribute)</a>
+      <li><a href="main.html#strvcf_annotator.api.STRAnnotator.str_panel_gz">str_panel_gz (strvcf_annotator.api.STRAnnotator attribute)</a>
+
+      <ul>
+        <li><a href="api.html#id0">(strvcf_annotator.core.vcf_processor.WorkerConfig attribute)</a>, <a href="api.html#strvcf_annotator.core.vcf_processor.WorkerConfig.str_panel_gz">[1]</a>
 </li>
+      </ul></li>
       <li><a href="main.html#strvcf_annotator.api.STRAnnotator">STRAnnotator (class in strvcf_annotator.api)</a>
 </li>
       <li>
@@ -390,6 +421,18 @@
       <li><a href="api.html#strvcf_annotator.utils.validation.validate_vcf_file">validate_vcf_file() (in module strvcf_annotator.utils.validation)</a>
 </li>
       <li><a href="api.html#strvcf_annotator.utils.validation.ValidationError">ValidationError</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="W">W</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#strvcf_annotator.core.vcf_processor.worker_init">worker_init() (in module strvcf_annotator.core.vcf_processor)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#strvcf_annotator.core.vcf_processor.WorkerConfig">WorkerConfig (class in strvcf_annotator.core.vcf_processor)</a>
 </li>
   </ul></td>
 </tr></table>

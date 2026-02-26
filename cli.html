@@ -6,16 +6,16 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Command-line interface &mdash; strvcf_annotator 0.3.0 documentation</title>
+  <title>Command-line interface &mdash; strvcf_annotator 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e259d695"></script>
-      <script src="_static/doctools.js?v=9bcbadda"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -87,7 +87,7 @@
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">strvcf</span><span class="o">-</span><span class="n">annotator</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">(</span><span class="o">--</span><span class="nb">input</span> <span class="n">INPUT</span> <span class="o">|</span> <span class="o">--</span><span class="nb">input</span><span class="o">-</span><span class="nb">dir</span> <span class="n">INPUT_DIR</span><span class="p">)</span> <span class="o">--</span><span class="nb">str</span><span class="o">-</span><span class="n">bed</span>
                         <span class="n">STR_BED</span> <span class="p">(</span><span class="o">--</span><span class="n">output</span> <span class="n">OUTPUT</span> <span class="o">|</span> <span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="nb">dir</span> <span class="n">OUTPUT_DIR</span><span class="p">)</span>
                         <span class="p">[</span><span class="o">--</span><span class="n">verbose</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">somatic</span><span class="o">-</span><span class="n">mode</span><span class="p">]</span>
-                        <span class="p">[</span><span class="o">--</span><span class="n">ignore</span><span class="o">-</span><span class="n">mismatch</span><span class="o">-</span><span class="n">warnings</span><span class="p">]</span>
+                        <span class="p">[</span><span class="o">--</span><span class="n">ignore</span><span class="o">-</span><span class="n">mismatch</span><span class="o">-</span><span class="n">warnings</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">jobs</span> <span class="n">JOBS</span><span class="p">]</span>
                         <span class="p">[</span><span class="o">--</span><span class="n">mismatch</span><span class="o">-</span><span class="n">truth</span> <span class="p">{</span><span class="n">panel</span><span class="p">,</span><span class="n">vcf</span><span class="p">,</span><span class="n">skip</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">version</span><span class="p">]</span>
 </pre></div>
 </div>
@@ -120,6 +120,9 @@
 <dt><kbd>--ignore-mismatch-warnings</kbd></dt>
 <dd><p>Suppress warnings about reference mismatches between STR panel sequence and VCF REF allele.</p>
 <p>Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+<dt><kbd>--jobs</kbd></dt>
+<dd><p>Number of parallel jobs to use for processing. Each job processes one VCF file. If not specified, the number of jobs is automatically determined based on CPU cores, number of files, and available RAM.</p>
 </dd>
 <dt><kbd>--mismatch-truth</kbd></dt>
 <dd><p>Possible choices: panel, vcf, skip</p>

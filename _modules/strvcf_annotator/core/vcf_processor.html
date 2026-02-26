@@ -5,16 +5,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>strvcf_annotator.core.vcf_processor &mdash; strvcf_annotator 0.3.0 documentation</title>
+  <title>strvcf_annotator.core.vcf_processor &mdash; strvcf_annotator 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=e259d695"></script>
-      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -74,19 +74,64 @@
 <span></span><span class="sd">&quot;&quot;&quot;VCF file processing and workflow management.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">multiprocessing</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProcessPoolExecutor</span><span class="p">,</span> <span class="n">as_completed</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">psutil</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pysam</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..parsers.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseVCFParser</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..parsers.generic</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenericParser</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils.vcf_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">chrom_to_order</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.annotation</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_new_record</span><span class="p">,</span> <span class="n">make_modified_header</span><span class="p">,</span> <span class="n">should_skip_genotype</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.str_reference</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_str_reference</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="c1"># Globals initialized once per worker process</span>
+<span class="n">WORKER_CONFIG</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="WorkerConfig">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.vcf_processor.WorkerConfig">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">WorkerConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration container for worker processes.</span>
+
+<span class="sd">    Stores parameters required by each worker to annotate VCF files.</span>
+<span class="sd">    The configuration is passed once during worker initialization and</span>
+<span class="sd">    reused for all tasks processed by that worker.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    str_panel_gz : str</span>
+<span class="sd">        Path to the BGZF-compressed, tabix-indexed STR reference file.</span>
+<span class="sd">    somatic_mode : bool, optional</span>
+<span class="sd">        Enable somatic filtering. When True, skips variants where both samples</span>
+<span class="sd">        have identical genotypes. Default is False.</span>
+<span class="sd">    ignore_mismatch_warnings : bool, optional</span>
+<span class="sd">        If True, suppresses warnings about reference mismatches between the</span>
+<span class="sd">        STR panel and VCF REF alleles. Default is False.</span>
+<span class="sd">    mismatch_truth : str, optional</span>
+<span class="sd">        Specifies which source to consider as ground truth for mismatches.</span>
+<span class="sd">        Options are &quot;panel&quot;, &quot;vcf&quot;, or &quot;skip&quot;. Default is &quot;panel&quot;.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    - The dataclass is frozen to ensure the configuration remains</span>
+<span class="sd">      immutable once workers are initialized.</span>
+<span class="sd">    - Instances of this class are passed to `worker_init`, which loads</span>
+<span class="sd">      the STR reference and exposes these settings to worker tasks.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">str_panel_gz</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">somatic_mode</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">ignore_mismatch_warnings</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">mismatch_truth</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">parser</span><span class="p">:</span> <span class="n">BaseVCFParser</span></div>
+
 
 
 <div class="viewcode-block" id="check_vcf_sorted">
@@ -166,7 +211,7 @@
 <a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.vcf_processor.generate_annotated_records">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">generate_annotated_records</span><span class="p">(</span>
     <span class="n">vcf_in</span><span class="p">:</span> <span class="n">pysam</span><span class="o">.</span><span class="n">VariantFile</span><span class="p">,</span>
-    <span class="n">str_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">str_panel_gz</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">parser</span><span class="p">:</span> <span class="n">BaseVCFParser</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">somatic_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">ignore_mismatch_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -184,8 +229,8 @@
 <span class="sd">    ----------</span>
 <span class="sd">    vcf_in : pysam.VariantFile</span>
 <span class="sd">        Input VCF file</span>
-<span class="sd">    str_df : pd.DataFrame</span>
-<span class="sd">        DataFrame with STR regions (from load_str_reference)</span>
+<span class="sd">    str_panel_gz : str</span>
+<span class="sd">        Path to BGZF-compressed, tabix-indexed STR reference file.</span>
 <span class="sd">    parser : BaseVCFParser, optional</span>
 <span class="sd">        Parser for genotype extraction. Uses GenericParser if None.</span>
 <span class="sd">    somatic_mode : bool, optional</span>
@@ -228,54 +273,56 @@
         <span class="n">vcf_in</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
         <span class="n">records</span> <span class="o">=</span> <span class="n">vcf_in</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>
 
-    <span class="c1"># Prepare STR list for efficient lookup</span>
-    <span class="n">str_idx</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">str_list</span> <span class="o">=</span> <span class="n">str_df</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="s2">&quot;records&quot;</span><span class="p">)</span>
+    <span class="c1"># Open tabix once for the whole generator (fast, avoids reopen per record)</span>
+    <span class="n">tbx</span> <span class="o">=</span> <span class="n">pysam</span><span class="o">.</span><span class="n">TabixFile</span><span class="p">(</span><span class="n">str_panel_gz</span><span class="p">)</span>
 
     <span class="n">skipped_count</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">records</span><span class="p">:</span>
-        <span class="c1"># Advance STR index to current chromosome/position</span>
-        <span class="k">while</span> <span class="n">str_idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">str_list</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span>
-            <span class="n">str_list</span><span class="p">[</span><span class="n">str_idx</span><span class="p">][</span><span class="s2">&quot;CHROM&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">record</span><span class="o">.</span><span class="n">chrom</span>
-            <span class="ow">or</span> <span class="p">(</span>
-                <span class="n">str_list</span><span class="p">[</span><span class="n">str_idx</span><span class="p">][</span><span class="s2">&quot;CHROM&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">record</span><span class="o">.</span><span class="n">chrom</span> <span class="ow">and</span> <span class="n">str_list</span><span class="p">[</span><span class="n">str_idx</span><span class="p">][</span><span class="s2">&quot;END&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">record</span><span class="o">.</span><span class="n">pos</span>
-            <span class="p">)</span>
-        <span class="p">):</span>
-            <span class="n">str_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">records</span><span class="p">:</span>
+            <span class="c1"># Skip based on genotype filtering (only if somatic_mode enabled)</span>
+            <span class="k">if</span> <span class="n">somatic_mode</span> <span class="ow">and</span> <span class="n">should_skip_genotype</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
+                <span class="n">skipped_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Skipped </span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">contig</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">pos</span><span class="si">}</span><span class="s2"> - identical genotypes (somatic mode)&quot;</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
 
-        <span class="k">if</span> <span class="n">str_idx</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">str_list</span><span class="p">):</span>
-            <span class="k">break</span>
+            <span class="c1"># Query tabix for a 1bp window at record.pos.</span>
+            <span class="c1"># Tabix uses 0-based half-open coordinates.</span>
+            <span class="n">query_start</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">record</span><span class="o">.</span><span class="n">pos</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">query_end</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">pos</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">candidates</span> <span class="o">=</span> <span class="n">tbx</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">chrom</span><span class="p">,</span> <span class="n">query_start</span><span class="p">,</span> <span class="n">query_end</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="c1"># Chromosome not present in the index</span>
+                <span class="k">continue</span>
 
-        <span class="n">str_row</span> <span class="o">=</span> <span class="n">str_list</span><span class="p">[</span><span class="n">str_idx</span><span class="p">]</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">parse_str_line</span><span class="p">(</span><span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+                <span class="n">parts</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">None</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">row</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;CHROM&quot;</span><span class="p">:</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                        <span class="s2">&quot;START&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="c1"># Convert to 1-based</span>
+                        <span class="s2">&quot;END&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
+                        <span class="s2">&quot;PERIOD&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">3</span><span class="p">]),</span>
+                        <span class="s2">&quot;RU&quot;</span><span class="p">:</span> <span class="n">parts</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span>
+                    <span class="p">}</span>
+                    <span class="n">row</span><span class="p">[</span><span class="s2">&quot;COUNT&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;END&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;START&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;PERIOD&quot;</span><span class="p">])</span>
+                    <span class="k">return</span> <span class="n">row</span>
+                <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">None</span>
 
-        <span class="c1"># Check for overlap - variant position should be within STR region</span>
-        <span class="k">if</span> <span class="p">(</span>
-            <span class="n">str_row</span><span class="p">[</span><span class="s2">&quot;CHROM&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">record</span><span class="o">.</span><span class="n">chrom</span>
-            <span class="ow">or</span> <span class="n">record</span><span class="o">.</span><span class="n">pos</span> <span class="o">&lt;</span> <span class="n">str_row</span><span class="p">[</span><span class="s2">&quot;START&quot;</span><span class="p">]</span>
-            <span class="ow">or</span> <span class="n">record</span><span class="o">.</span><span class="n">pos</span> <span class="o">&gt;</span> <span class="n">str_row</span><span class="p">[</span><span class="s2">&quot;END&quot;</span><span class="p">]</span>
-        <span class="p">):</span>
-            <span class="k">continue</span>  <span class="c1"># No overlap</span>
+            <span class="n">chosen</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">:</span>
+                <span class="n">str_row</span> <span class="o">=</span> <span class="n">parse_str_line</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">str_row</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="c1"># True overlap check in 1-based coordinates</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">str_row</span><span class="p">[</span><span class="s2">&quot;START&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">record</span><span class="o">.</span><span class="n">pos</span> <span class="o">&lt;=</span> <span class="n">str_row</span><span class="p">[</span><span class="s2">&quot;END&quot;</span><span class="p">]):</span>
+                    <span class="k">continue</span>
 
-        <span class="c1"># Skip based on genotype filtering (only if somatic_mode enabled)</span>
-        <span class="k">if</span> <span class="n">somatic_mode</span> <span class="ow">and</span> <span class="n">should_skip_genotype</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
-            <span class="n">skipped_count</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Skipped </span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">contig</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">pos</span><span class="si">}</span><span class="s2"> - identical genotypes (somatic mode)&quot;</span>
-            <span class="p">)</span>
-            <span class="k">continue</span>
-
-        <span class="c1"># Try all STR intervals that overlap this record.pos on the same chromosome</span>
-        <span class="n">chosen</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="n">j</span> <span class="o">=</span> <span class="n">str_idx</span>
-        <span class="k">while</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">str_list</span><span class="p">)</span> <span class="ow">and</span> <span class="n">str_list</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="s2">&quot;CHROM&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">record</span><span class="o">.</span><span class="n">chrom</span><span class="p">:</span>
-            <span class="n">str_row</span> <span class="o">=</span> <span class="n">str_list</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
-
-            <span class="c1"># Once START is past POS, no further overlaps are possible</span>
-            <span class="k">if</span> <span class="n">str_row</span><span class="p">[</span><span class="s2">&quot;START&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">record</span><span class="o">.</span><span class="n">pos</span><span class="p">:</span>
-                <span class="k">break</span>
-
-            <span class="c1"># Candidate overlaps POS?</span>
-            <span class="k">if</span> <span class="n">str_row</span><span class="p">[</span><span class="s2">&quot;START&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">record</span><span class="o">.</span><span class="n">pos</span> <span class="o">&lt;=</span> <span class="n">str_row</span><span class="p">[</span><span class="s2">&quot;END&quot;</span><span class="p">]:</span>
                 <span class="n">new_record</span> <span class="o">=</span> <span class="n">build_new_record</span><span class="p">(</span>
                     <span class="n">record</span><span class="p">,</span>
                     <span class="n">str_row</span><span class="p">,</span>
@@ -286,7 +333,6 @@
                 <span class="p">)</span>
                 <span class="c1"># Skip in case of mismatch and mismatch_truth is &quot;skip&quot;</span>
                 <span class="k">if</span> <span class="n">new_record</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
                     <span class="k">continue</span>
 
                 <span class="k">if</span> <span class="n">new_record</span><span class="o">.</span><span class="n">alleles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">new_record</span><span class="o">.</span><span class="n">alleles</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
@@ -294,12 +340,11 @@
                     <span class="k">break</span>
                 <span class="c1"># If variant effectively doesn&#39;t change STR allele (e.g., indel outside STR after normalization),</span>
                 <span class="c1"># treat this STR row as not applicable and try next overlapping STR.</span>
-            <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
 
-        <span class="k">if</span> <span class="n">chosen</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">continue</span>
-
-        <span class="k">yield</span> <span class="n">chosen</span>
+            <span class="k">if</span> <span class="n">chosen</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">chosen</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">tbx</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
     <span class="c1"># Log summary if records were skipped</span>
     <span class="k">if</span> <span class="n">skipped_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
@@ -313,7 +358,7 @@
 <a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.vcf_processor.annotate_vcf_to_file">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">annotate_vcf_to_file</span><span class="p">(</span>
     <span class="n">vcf_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">str_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">str_panel_gz</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">parser</span><span class="p">:</span> <span class="n">BaseVCFParser</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">somatic_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -329,8 +374,8 @@
 <span class="sd">    ----------</span>
 <span class="sd">    vcf_path : str</span>
 <span class="sd">        Path to input VCF file</span>
-<span class="sd">    str_df : pd.DataFrame</span>
-<span class="sd">        DataFrame with STR regions (from load_str_reference)</span>
+<span class="sd">    str_panel_gz : str</span>
+<span class="sd">        Path to BGZF-compressed, tabix-indexed STR reference file.</span>
 <span class="sd">    output_path : str</span>
 <span class="sd">        Path to output VCF file</span>
 <span class="sd">    parser : BaseVCFParser, optional</span>
@@ -362,7 +407,7 @@
     <span class="n">written_count</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">generate_annotated_records</span><span class="p">(</span>
         <span class="n">vcf_in</span><span class="p">,</span>
-        <span class="n">str_df</span><span class="p">,</span>
+        <span class="n">str_panel_gz</span><span class="p">,</span>
         <span class="n">parser</span><span class="p">,</span>
         <span class="n">somatic_mode</span><span class="o">=</span><span class="n">somatic_mode</span><span class="p">,</span>
         <span class="n">ignore_mismatch_warnings</span><span class="o">=</span><span class="n">ignore_mismatch_warnings</span><span class="p">,</span>
@@ -378,16 +423,206 @@
 
 
 
+<div class="viewcode-block" id="annotate_one_vcf">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.vcf_processor.annotate_one_vcf">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">annotate_one_vcf</span><span class="p">(</span><span class="n">task</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Annotate a single VCF file in a worker process.</span>
+
+<span class="sd">    Runs `annotate_vcf_to_file` for one input VCF and writes the annotated VCF</span>
+<span class="sd">    to the given output path. Created to be executed inside a process pool.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    task : Tuple[str, str]</span>
+<span class="sd">        (vcf_path, output_path) pair, where:</span>
+<span class="sd">          - vcf_path is the input VCF (optionally gzipped)</span>
+<span class="sd">          - output_path is the target annotated VCF path</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        Path to the produced output VCF file.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    - Expects STR reference (STR_DF) and worker configuration (WORKER_CONFIG)</span>
+<span class="sd">      to be initialized once per worker via `worker_init`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">WORKER_CONFIG</span>
+
+    <span class="n">vcf_path</span><span class="p">,</span> <span class="n">output_path</span> <span class="o">=</span> <span class="n">task</span>
+
+    <span class="n">annotate_vcf_to_file</span><span class="p">(</span>
+        <span class="n">vcf_path</span><span class="o">=</span><span class="n">vcf_path</span><span class="p">,</span>
+        <span class="n">str_panel_gz</span><span class="o">=</span><span class="n">WORKER_CONFIG</span><span class="o">.</span><span class="n">str_panel_gz</span><span class="p">,</span>
+        <span class="n">output_path</span><span class="o">=</span><span class="n">output_path</span><span class="p">,</span>
+        <span class="n">parser</span><span class="o">=</span><span class="n">WORKER_CONFIG</span><span class="o">.</span><span class="n">parser</span><span class="p">,</span>
+        <span class="n">somatic_mode</span><span class="o">=</span><span class="n">WORKER_CONFIG</span><span class="o">.</span><span class="n">somatic_mode</span><span class="p">,</span>
+        <span class="n">ignore_mismatch_warnings</span><span class="o">=</span><span class="n">WORKER_CONFIG</span><span class="o">.</span><span class="n">ignore_mismatch_warnings</span><span class="p">,</span>
+        <span class="n">mismatch_truth</span><span class="o">=</span><span class="n">WORKER_CONFIG</span><span class="o">.</span><span class="n">mismatch_truth</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">output_path</span></div>
+
+
+
+<div class="viewcode-block" id="get_available_ram_bytes">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.vcf_processor.get_available_ram_bytes">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_available_ram_bytes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get available system RAM.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    int</span>
+<span class="sd">        Available RAM in bytes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">psutil</span><span class="o">.</span><span class="n">virtual_memory</span><span class="p">()</span><span class="o">.</span><span class="n">available</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="estimate_ram_per_worker_bytes">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.vcf_processor.estimate_ram_per_worker_bytes">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">estimate_ram_per_worker_bytes</span><span class="p">(</span><span class="n">vcf_paths</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Estimate RAM usage per worker for VCF annotation.</span>
+
+<span class="sd">    Provides an estimate of how much memory a single worker process</span>
+<span class="sd">    might require while annotating one VCF. This estimate is used to cap the</span>
+<span class="sd">    number of concurrent workers to reduce the risk of out-of-memory (OOM)</span>
+<span class="sd">    crashes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    vcf_paths : list[str]</span>
+<span class="sd">        List of input VCF paths that will be processed.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    int</span>
+<span class="sd">        Estimated RAM usage per worker in bytes.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    - If a VCF is not sorted, the current pipeline may load all records into</span>
+<span class="sd">      memory for sorting, which can drastically increase memory usage.</span>
+<span class="sd">    - Even for sorted VCFs, pysam/htslib buffers plus Python object overhead</span>
+<span class="sd">      can be substantial.</span>
+<span class="sd">    - Each worker loads the STR reference once. The STR DataFrame and derived</span>
+<span class="sd">      Python objects often consume several times the BED file size on disk.</span>
+
+<span class="sd">    Heuristic</span>
+<span class="sd">    ---------</span>
+<span class="sd">    - Identify the largest input file size on disk.</span>
+<span class="sd">    - If the largest file is gzipped, assume a higher expansion factor for the</span>
+<span class="sd">      working set (e.g., decompression + object overhead).</span>
+<span class="sd">    - Add a fixed overhead to account for Python/pysam allocations.</span>
+<span class="sd">    - Add STR panel RAM estimate as: str_panel_factor * BED_size_on_disk.</span>
+
+<span class="sd">    This is intentionally conservative to avoid OOM.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">max_size</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">max_path</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">vcf_paths</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">s</span> <span class="o">&gt;</span> <span class="n">max_size</span><span class="p">:</span>
+            <span class="n">max_size</span> <span class="o">=</span> <span class="n">s</span>
+            <span class="n">max_path</span> <span class="o">=</span> <span class="n">p</span>
+
+    <span class="n">is_gz</span> <span class="o">=</span> <span class="n">max_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.gz&quot;</span><span class="p">)</span>
+    <span class="n">expansion_factor</span> <span class="o">=</span> <span class="mi">5</span> <span class="k">if</span> <span class="n">is_gz</span> <span class="k">else</span> <span class="mi">2</span>  <span class="c1"># VCF decompression + object overhead</span>
+
+    <span class="n">fixed_overhead</span> <span class="o">=</span> <span class="mi">700</span> <span class="o">*</span> <span class="mi">1024</span><span class="o">**</span><span class="mi">2</span>  <span class="c1"># ~700MB overhead per worker</span>
+
+    <span class="n">estimate</span> <span class="o">=</span> <span class="n">fixed_overhead</span> <span class="o">+</span> <span class="p">(</span><span class="n">expansion_factor</span> <span class="o">*</span> <span class="n">max_size</span><span class="p">)</span>
+
+    <span class="c1"># Clamp to sane minimum/maximum to avoid weird estimates on tiny/huge files</span>
+    <span class="n">min_estimate</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">*</span> <span class="mi">1024</span><span class="o">**</span><span class="mi">3</span>  <span class="c1"># 1 GB</span>
+    <span class="n">max_estimate</span> <span class="o">=</span> <span class="mi">120</span> <span class="o">*</span> <span class="mi">1024</span><span class="o">**</span><span class="mi">3</span>  <span class="c1"># 120 GB</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">estimate</span><span class="p">,</span> <span class="n">min_estimate</span><span class="p">),</span> <span class="n">max_estimate</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="compute_jobs_auto">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.vcf_processor.compute_jobs_auto">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_jobs_auto</span><span class="p">(</span><span class="n">n_files</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">vcf_paths</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute an automatic number of concurrent workers.</span>
+
+<span class="sd">    Chooses a default number of parallel jobs for processing a directory of VCF</span>
+<span class="sd">    files, balancing CPU capacity and memory constraints.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    n_files : int</span>
+<span class="sd">        Number of VCF files that will be processed (after skipping outputs that</span>
+<span class="sd">        already exist).</span>
+<span class="sd">    vcf_paths : list[str]</span>
+<span class="sd">        List of VCF paths used to estimate per-worker memory usage.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    int</span>
+<span class="sd">        Recommended number of concurrent worker processes (at least 1).</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The selection follows:</span>
+<span class="sd">    - jobs_auto = min(cpu_cores, n_files)</span>
+<span class="sd">    - jobs_auto = min(jobs_auto, floor(available_ram / ram_per_worker_estimate))</span>
+
+<span class="sd">    If available RAM cannot be determined, the CPU-based limit is used.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cpu_cores</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span>
+    <span class="n">jobs_auto</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cpu_cores</span><span class="p">,</span> <span class="n">n_files</span><span class="p">)</span>
+
+    <span class="n">available</span> <span class="o">=</span> <span class="n">get_available_ram_bytes</span><span class="p">()</span>
+    <span class="n">ram_per_worker</span> <span class="o">=</span> <span class="n">estimate_ram_per_worker_bytes</span><span class="p">(</span><span class="n">vcf_paths</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">available</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">ram_per_worker</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">ram_cap</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">available</span> <span class="o">//</span> <span class="n">ram_per_worker</span><span class="p">)</span>
+        <span class="n">jobs_auto</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">jobs_auto</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">ram_cap</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">jobs_auto</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="worker_init">
+<a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.vcf_processor.worker_init">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">worker_init</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">WorkerConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize worker process state.</span>
+
+<span class="sd">    Called once when a worker process starts. Stores configuration</span>
+<span class="sd">    values so they can be reused for all VCF files processed by that worker.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    config : WorkerConfig</span>
+<span class="sd">        Configuration object containing:</span>
+<span class="sd">          - str_panel_gz : path to STR panel BGZF-compressed, tabix-indexed reference file</span>
+<span class="sd">          - somatic_mode : whether somatic filtering is enabled</span>
+<span class="sd">          - ignore_mismatch_warnings : whether to suppress mismatch warnings</span>
+<span class="sd">          - mismatch_truth : rule for handling panel/VCF mismatches</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    - This function is used as the `initializer` for `ProcessPoolExecutor`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">WORKER_CONFIG</span>
+    <span class="n">WORKER_CONFIG</span> <span class="o">=</span> <span class="n">config</span></div>
+
+
+
 <div class="viewcode-block" id="process_directory">
 <a class="viewcode-back" href="../../../api.html#strvcf_annotator.core.vcf_processor.process_directory">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">process_directory</span><span class="p">(</span>
     <span class="n">input_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">str_bed_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">str_panel_gz</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">output_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">parser</span><span class="p">:</span> <span class="n">BaseVCFParser</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">somatic_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">ignore_mismatch_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">mismatch_truth</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;panel&quot;</span><span class="p">,</span>
+    <span class="n">jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Batch process directory of VCF files.</span>
 
@@ -398,8 +633,8 @@
 <span class="sd">    ----------</span>
 <span class="sd">    input_dir : str</span>
 <span class="sd">        Directory containing input VCF files</span>
-<span class="sd">    str_bed_path : str</span>
-<span class="sd">        Path to BED file with STR regions</span>
+<span class="sd">    str_panel_gz : str</span>
+<span class="sd">        Path to BGZF-compressed, tabix-indexed STR panel reference file</span>
 <span class="sd">    output_dir : str</span>
 <span class="sd">        Directory for output VCF files</span>
 <span class="sd">    parser : BaseVCFParser, optional</span>
@@ -415,6 +650,11 @@
 <span class="sd">          - &quot;panel&quot;: trust panel repeat sequence (default behavior)</span>
 <span class="sd">          - &quot;vcf&quot;: trust VCF REF. patch the panel repeat sequence overlap to match VCF REF</span>
 <span class="sd">          - &quot;skip&quot;: skip record with mismatch</span>
+<span class="sd">    jobs: int, optional</span>
+<span class="sd">        - If jobs is None: compute jobs automatically:</span>
+<span class="sd">            jobs_auto = min(cpu_cores, n_files)</span>
+<span class="sd">            jobs_auto = min(jobs_auto, floor(available_ram / ram_per_worker_estimate))</span>
+<span class="sd">        - If jobs is provided: use it exactly.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="n">parser</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -423,11 +663,12 @@
     <span class="c1"># Create output directory</span>
     <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-    <span class="c1"># Load STR reference</span>
-    <span class="n">str_df</span> <span class="o">=</span> <span class="n">load_str_reference</span><span class="p">(</span><span class="n">str_bed_path</span><span class="p">)</span>
-
     <span class="c1"># Process each VCF file</span>
     <span class="n">input_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">input_dir</span><span class="p">)</span>
+
+    <span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">vcf_paths_for_estimate</span> <span class="o">=</span> <span class="p">[]</span>
+
     <span class="k">for</span> <span class="n">vcf_file</span> <span class="ow">in</span> <span class="n">input_path</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;*.vcf*&quot;</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">vcf_file</span><span class="o">.</span><span class="n">suffix</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;.vcf&quot;</span><span class="p">,</span> <span class="s2">&quot;.gz&quot;</span><span class="p">]:</span>
             <span class="c1"># Generate output filename</span>
@@ -441,17 +682,57 @@
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipping </span><span class="si">{</span><span class="n">vcf_file</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> — already processed.&quot;</span><span class="p">)</span>
                 <span class="k">continue</span>
 
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing </span><span class="si">{</span><span class="n">vcf_file</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
-            <span class="n">annotate_vcf_to_file</span><span class="p">(</span>
-                <span class="nb">str</span><span class="p">(</span><span class="n">vcf_file</span><span class="p">),</span>
-                <span class="n">str_df</span><span class="p">,</span>
-                <span class="nb">str</span><span class="p">(</span><span class="n">output_file</span><span class="p">),</span>
-                <span class="n">parser</span><span class="p">,</span>
-                <span class="n">somatic_mode</span><span class="o">=</span><span class="n">somatic_mode</span><span class="p">,</span>
-                <span class="n">ignore_mismatch_warnings</span><span class="o">=</span><span class="n">ignore_mismatch_warnings</span><span class="p">,</span>
-                <span class="n">mismatch_truth</span><span class="o">=</span><span class="n">mismatch_truth</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; → Output: </span><span class="si">{</span><span class="n">output_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+            <span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">str</span><span class="p">(</span><span class="n">vcf_file</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">output_file</span><span class="p">)))</span>
+            <span class="n">vcf_paths_for_estimate</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">vcf_file</span><span class="p">))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">tasks</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No VCF files to process.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Process larger files first (reduces idle time at end)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_size</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="n">tasks</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">get_size</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">n_files</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">jobs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">jobs_to_use</span> <span class="o">=</span> <span class="n">compute_jobs_auto</span><span class="p">(</span><span class="n">n_files</span><span class="o">=</span><span class="n">n_files</span><span class="p">,</span> <span class="n">vcf_paths</span><span class="o">=</span><span class="n">vcf_paths_for_estimate</span><span class="p">)</span>
+        <span class="n">avail_gb</span> <span class="o">=</span> <span class="n">get_available_ram_bytes</span><span class="p">()</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span> <span class="k">if</span> <span class="n">get_available_ram_bytes</span><span class="p">()</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="n">est_gb</span> <span class="o">=</span> <span class="n">estimate_ram_per_worker_bytes</span><span class="p">(</span><span class="n">vcf_paths_for_estimate</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Auto jobs=</span><span class="si">{</span><span class="n">jobs_to_use</span><span class="si">}</span><span class="s2"> (files=</span><span class="si">{</span><span class="n">n_files</span><span class="si">}</span><span class="s2">, cpu=</span><span class="si">{</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;available_ram≈</span><span class="si">{</span><span class="n">avail_gb</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">GB, est_ram_per_worker≈</span><span class="si">{</span><span class="n">est_gb</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">GB)&quot;</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">jobs_to_use</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">jobs</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using fixed jobs=</span><span class="si">{</span><span class="n">jobs_to_use</span><span class="si">}</span><span class="s2"> (files=</span><span class="si">{</span><span class="n">n_files</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+
+    <span class="n">config</span> <span class="o">=</span> <span class="n">WorkerConfig</span><span class="p">(</span>
+        <span class="n">str_panel_gz</span><span class="o">=</span><span class="n">str_panel_gz</span><span class="p">,</span>
+        <span class="n">somatic_mode</span><span class="o">=</span><span class="n">somatic_mode</span><span class="p">,</span>
+        <span class="n">ignore_mismatch_warnings</span><span class="o">=</span><span class="n">ignore_mismatch_warnings</span><span class="p">,</span>
+        <span class="n">mismatch_truth</span><span class="o">=</span><span class="n">mismatch_truth</span><span class="p">,</span>
+        <span class="n">parser</span><span class="o">=</span><span class="n">parser</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">ProcessPoolExecutor</span><span class="p">(</span>
+        <span class="n">max_workers</span><span class="o">=</span><span class="n">jobs_to_use</span><span class="p">,</span>
+        <span class="n">initializer</span><span class="o">=</span><span class="n">worker_init</span><span class="p">,</span>
+        <span class="n">initargs</span><span class="o">=</span><span class="p">(</span><span class="n">config</span><span class="p">,),</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+        <span class="n">future_to_task</span> <span class="o">=</span> <span class="p">{</span><span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">annotate_one_vcf</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span> <span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">}</span>
+
+        <span class="k">for</span> <span class="n">future</span> <span class="ow">in</span> <span class="n">as_completed</span><span class="p">(</span><span class="n">future_to_task</span><span class="p">):</span>
+            <span class="n">vcf_path</span><span class="p">,</span> <span class="n">out_path</span> <span class="o">=</span> <span class="n">future_to_task</span><span class="p">[</span><span class="n">future</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">produced</span> <span class="o">=</span> <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Done: </span><span class="si">{</span><span class="n">Path</span><span class="p">(</span><span class="n">vcf_path</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> → </span><span class="si">{</span><span class="n">produced</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed: </span><span class="si">{</span><span class="n">Path</span><span class="p">(</span><span class="n">vcf_path</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> → </span><span class="si">{</span><span class="n">out_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
 </pre></div>
 

@@ -5,16 +5,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>strvcf_annotator.api &mdash; strvcf_annotator 0.3.0 documentation</title>
+  <title>strvcf_annotator.api &mdash; strvcf_annotator 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=e259d695"></script>
-      <script src="../../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -74,6 +74,8 @@
 <span></span><span class="sd">&quot;&quot;&quot;Library API for programmatic access to STR annotation functionality.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">statistics</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">pysam</span>
@@ -128,8 +130,8 @@
 <span class="sd">    ----------</span>
 <span class="sd">    str_bed_path : str</span>
 <span class="sd">        Path to STR BED file</span>
-<span class="sd">    str_df : pd.DataFrame</span>
-<span class="sd">        Loaded STR reference data</span>
+<span class="sd">    str_panel_gz : str</span>
+<span class="sd">        Path to BGZF-compressed, tabix-indexed STR reference file.</span>
 <span class="sd">    parser : BaseVCFParser</span>
 <span class="sd">        Parser for genotype extraction</span>
 <span class="sd">    somatic_mode : bool</span>
@@ -158,16 +160,13 @@
         <span class="n">mismatch_truth</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;panel&quot;</span><span class="p">,</span>  <span class="c1"># &quot;panel&quot; | &quot;vcf&quot; | &quot;skip&quot;</span>
     <span class="p">):</span>
         <span class="n">validate_str_bed_file</span><span class="p">(</span><span class="n">str_bed_path</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">str_bed_path</span> <span class="o">=</span> <span class="n">str_bed_path</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">str_df</span> <span class="o">=</span> <span class="n">load_str_reference</span><span class="p">(</span><span class="n">str_bed_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">str_panel_gz</span> <span class="o">=</span> <span class="n">load_str_reference</span><span class="p">(</span><span class="n">str_bed_path</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">parser</span> <span class="k">if</span> <span class="n">parser</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">GenericParser</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">somatic_mode</span> <span class="o">=</span> <span class="n">somatic_mode</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">ignore_mismatch_warnings</span> <span class="o">=</span> <span class="n">ignore_mismatch_warnings</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mismatch_truth</span> <span class="o">=</span> <span class="n">mismatch_truth</span>
-
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">)</span><span class="si">}</span><span class="s2"> STR regions from </span><span class="si">{</span><span class="n">str_bed_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="STRAnnotator.annotate_vcf_file">
 <a class="viewcode-back" href="../../main.html#strvcf_annotator.api.STRAnnotator.annotate_vcf_file">[docs]</a>
@@ -212,7 +211,6 @@
 <span class="sd">            - ``&quot;skip&quot;``: skip variants with mismatches entirely</span>
 
 <span class="sd">            If ``None``, the value set on the annotator instance is used.</span>
-
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        ValidationError</span>
@@ -237,7 +235,7 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Annotating </span><span class="si">{</span><span class="n">input_path</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
         <span class="n">annotate_vcf_to_file</span><span class="p">(</span>
             <span class="n">input_path</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">str_panel_gz</span><span class="p">,</span>
             <span class="n">output_path</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="p">,</span>
             <span class="n">somatic_mode</span><span class="o">=</span><span class="n">smode</span><span class="p">,</span>
@@ -311,7 +309,7 @@
 
         <span class="k">yield from</span> <span class="n">generate_annotated_records</span><span class="p">(</span>
             <span class="n">vcf_in</span><span class="o">=</span><span class="n">vcf_in</span><span class="p">,</span>
-            <span class="n">str_df</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">,</span>
+            <span class="n">str_panel_gz</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">str_panel_gz</span><span class="p">,</span>
             <span class="n">parser</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="p">,</span>
             <span class="n">somatic_mode</span><span class="o">=</span><span class="n">smode</span><span class="p">,</span>
             <span class="n">ignore_mismatch_warnings</span><span class="o">=</span><span class="n">imw</span><span class="p">,</span>
@@ -329,6 +327,7 @@
         <span class="n">somatic_mode</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">ignore_mismatch_warnings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">mismatch_truth</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">jobs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Batch process a directory of VCF files.</span>
@@ -364,7 +363,11 @@
 <span class="sd">            - ``&quot;skip&quot;``: skip variants with mismatches entirely</span>
 
 <span class="sd">            If ``None``, the value set on the annotator instance is used.</span>
-
+<span class="sd">        jobs: int, optional</span>
+<span class="sd">            - If jobs is None: compute jobs automatically:</span>
+<span class="sd">                jobs_auto = min(cpu_cores, n_files)</span>
+<span class="sd">                jobs_auto = min(jobs_auto, floor(available_ram / ram_per_worker_estimate))</span>
+<span class="sd">            - If jobs is provided: use it exactly.</span>
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        ValidationError</span>
@@ -390,12 +393,13 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing VCF files in </span><span class="si">{</span><span class="n">input_dir</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
         <span class="n">process_directory</span><span class="p">(</span>
             <span class="n">input_dir</span><span class="o">=</span><span class="n">input_dir</span><span class="p">,</span>
-            <span class="n">str_bed_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">str_bed_path</span><span class="p">,</span>
+            <span class="n">str_panel_gz</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">str_panel_gz</span><span class="p">,</span>
             <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">,</span>
             <span class="n">parser</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="p">,</span>
             <span class="n">somatic_mode</span><span class="o">=</span><span class="n">smode</span><span class="p">,</span>
             <span class="n">ignore_mismatch_warnings</span><span class="o">=</span><span class="n">imw</span><span class="p">,</span>
             <span class="n">mismatch_truth</span><span class="o">=</span><span class="n">mtruth</span><span class="p">,</span>
+            <span class="n">jobs</span><span class="o">=</span><span class="n">jobs</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Batch processing complete. Output in </span><span class="si">{</span><span class="n">output_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
@@ -427,7 +431,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.core.str_reference</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_str_at_position</span>
 
-        <span class="k">return</span> <span class="n">get_str_at_position</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">,</span> <span class="n">chrom</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">get_str_at_position</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">str_panel_gz</span><span class="p">,</span> <span class="n">chrom</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="STRAnnotator.get_statistics">
@@ -447,15 +451,49 @@
 <span class="sd">        &gt;&gt;&gt; stats = annotator.get_statistics()</span>
 <span class="sd">        &gt;&gt;&gt; print(f&quot;Total STR regions: {stats[&#39;total_regions&#39;]}&quot;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">stats</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;total_regions&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">),</span>
-            <span class="s2">&quot;chromosomes&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">[</span><span class="s2">&quot;CHROM&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">nunique</span><span class="p">(),</span>
-            <span class="s2">&quot;unique_repeat_units&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">[</span><span class="s2">&quot;RU&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">nunique</span><span class="p">(),</span>
-            <span class="s2">&quot;period_distribution&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">[</span><span class="s2">&quot;PERIOD&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
-            <span class="s2">&quot;mean_repeat_count&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">[</span><span class="s2">&quot;COUNT&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span>
-            <span class="s2">&quot;median_repeat_count&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">str_df</span><span class="p">[</span><span class="s2">&quot;COUNT&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">median</span><span class="p">(),</span>
-        <span class="p">}</span>
-        <span class="k">return</span> <span class="n">stats</span></div>
+        <span class="n">tbx</span> <span class="o">=</span> <span class="n">pysam</span><span class="o">.</span><span class="n">TabixFile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">str_panel_gz</span><span class="p">)</span>
+
+        <span class="n">total_regions</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">chromosomes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">repeat_units</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">period_counter</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Iterate through all records in the file</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">tbx</span><span class="o">.</span><span class="n">fetch</span><span class="p">():</span>
+            <span class="n">parts</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">chrom</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">end</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+                <span class="n">period</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+                <span class="n">ru</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+                <span class="n">count</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">period</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">total_regions</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">chromosomes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">chrom</span><span class="p">)</span>
+            <span class="n">repeat_units</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ru</span><span class="p">)</span>
+            <span class="n">period_counter</span><span class="p">[</span><span class="n">period</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">counts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">count</span><span class="p">)</span>
+
+        <span class="n">tbx</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="n">mean_count</span> <span class="o">=</span> <span class="n">statistics</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span> <span class="k">if</span> <span class="n">counts</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">median_count</span> <span class="o">=</span> <span class="n">statistics</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span> <span class="k">if</span> <span class="n">counts</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;total_regions&quot;</span><span class="p">:</span> <span class="n">total_regions</span><span class="p">,</span>
+            <span class="s2">&quot;chromosomes&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">chromosomes</span><span class="p">),</span>
+            <span class="s2">&quot;unique_repeat_units&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">repeat_units</span><span class="p">),</span>
+            <span class="s2">&quot;period_distribution&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">period_counter</span><span class="p">),</span>
+            <span class="s2">&quot;mean_repeat_count&quot;</span><span class="p">:</span> <span class="n">mean_count</span><span class="p">,</span>
+            <span class="s2">&quot;median_repeat_count&quot;</span><span class="p">:</span> <span class="n">median_count</span><span class="p">,</span>
+        <span class="p">}</span></div>
 </div>
 
 

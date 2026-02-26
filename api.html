@@ -6,16 +6,16 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dev Documentation &mdash; strvcf_annotator 0.3.0 documentation</title>
+  <title>Dev Documentation &mdash; strvcf_annotator 1.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e259d695"></script>
-      <script src="_static/doctools.js?v=9bcbadda"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -53,10 +53,27 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-strvcf_annotator.core.vcf_processor">Process vcf</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.core.vcf_processor.WorkerConfig"><code class="docutils literal notranslate"><span class="pre">WorkerConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#strvcf_annotator.core.vcf_processor.WorkerConfig.str_panel_gz"><code class="docutils literal notranslate"><span class="pre">WorkerConfig.str_panel_gz</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#strvcf_annotator.core.vcf_processor.WorkerConfig.somatic_mode"><code class="docutils literal notranslate"><span class="pre">WorkerConfig.somatic_mode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#strvcf_annotator.core.vcf_processor.WorkerConfig.ignore_mismatch_warnings"><code class="docutils literal notranslate"><span class="pre">WorkerConfig.ignore_mismatch_warnings</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#strvcf_annotator.core.vcf_processor.WorkerConfig.mismatch_truth"><code class="docutils literal notranslate"><span class="pre">WorkerConfig.mismatch_truth</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id0"><code class="docutils literal notranslate"><span class="pre">WorkerConfig.str_panel_gz</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id1"><code class="docutils literal notranslate"><span class="pre">WorkerConfig.somatic_mode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id2"><code class="docutils literal notranslate"><span class="pre">WorkerConfig.ignore_mismatch_warnings</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id3"><code class="docutils literal notranslate"><span class="pre">WorkerConfig.mismatch_truth</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#strvcf_annotator.core.vcf_processor.WorkerConfig.parser"><code class="docutils literal notranslate"><span class="pre">WorkerConfig.parser</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.core.vcf_processor.check_vcf_sorted"><code class="docutils literal notranslate"><span class="pre">check_vcf_sorted()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.core.vcf_processor.reset_and_sort_vcf"><code class="docutils literal notranslate"><span class="pre">reset_and_sort_vcf()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.core.vcf_processor.generate_annotated_records"><code class="docutils literal notranslate"><span class="pre">generate_annotated_records()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.core.vcf_processor.annotate_vcf_to_file"><code class="docutils literal notranslate"><span class="pre">annotate_vcf_to_file()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.core.vcf_processor.annotate_one_vcf"><code class="docutils literal notranslate"><span class="pre">annotate_one_vcf()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.core.vcf_processor.get_available_ram_bytes"><code class="docutils literal notranslate"><span class="pre">get_available_ram_bytes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.core.vcf_processor.estimate_ram_per_worker_bytes"><code class="docutils literal notranslate"><span class="pre">estimate_ram_per_worker_bytes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.core.vcf_processor.compute_jobs_auto"><code class="docutils literal notranslate"><span class="pre">compute_jobs_auto()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.core.vcf_processor.worker_init"><code class="docutils literal notranslate"><span class="pre">worker_init()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.core.vcf_processor.process_directory"><code class="docutils literal notranslate"><span class="pre">process_directory()</span></code></a></li>
 </ul>
 </li>
@@ -78,6 +95,8 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-strvcf_annotator.core.str_reference">STR reference processing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.core.str_reference.is_valid_tabix"><code class="docutils literal notranslate"><span class="pre">is_valid_tabix()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.core.str_reference.sort_bed_file"><code class="docutils literal notranslate"><span class="pre">sort_bed_file()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.core.str_reference.load_str_reference"><code class="docutils literal notranslate"><span class="pre">load_str_reference()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.core.str_reference.find_overlapping_str"><code class="docutils literal notranslate"><span class="pre">find_overlapping_str()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#strvcf_annotator.core.str_reference.get_str_at_position"><code class="docutils literal notranslate"><span class="pre">get_str_at_position()</span></code></a></li>
@@ -251,6 +270,95 @@ Annotation continues regardless.</p></li>
 <section id="module-strvcf_annotator.core.vcf_processor">
 <span id="process-vcf"></span><h2>Process vcf<a class="headerlink" href="#module-strvcf_annotator.core.vcf_processor" title="Link to this heading"></a></h2>
 <p>VCF file processing and workflow management.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="strvcf_annotator.core.vcf_processor.WorkerConfig">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.vcf_processor.</span></span><span class="sig-name descname"><span class="pre">WorkerConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str_panel_gz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">somatic_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_mismatch_warnings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mismatch_truth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parser</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#strvcf_annotator.parsers.base.BaseVCFParser" title="strvcf_annotator.parsers.base.BaseVCFParser"><span class="pre">BaseVCFParser</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/strvcf_annotator/core/vcf_processor.html#WorkerConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.vcf_processor.WorkerConfig" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Configuration container for worker processes.</p>
+<p>Stores parameters required by each worker to annotate VCF files.
+The configuration is passed once during worker initialization and
+reused for all tasks processed by that worker.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="strvcf_annotator.core.vcf_processor.WorkerConfig.str_panel_gz">
+<span class="sig-name descname"><span class="pre">str_panel_gz</span></span><a class="headerlink" href="#strvcf_annotator.core.vcf_processor.WorkerConfig.str_panel_gz" title="Link to this definition"></a></dt>
+<dd><p>Path to the BGZF-compressed, tabix-indexed STR reference file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="strvcf_annotator.core.vcf_processor.WorkerConfig.somatic_mode">
+<span class="sig-name descname"><span class="pre">somatic_mode</span></span><a class="headerlink" href="#strvcf_annotator.core.vcf_processor.WorkerConfig.somatic_mode" title="Link to this definition"></a></dt>
+<dd><p>Enable somatic filtering. When True, skips variants where both samples
+have identical genotypes. Default is False.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool, optional</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="strvcf_annotator.core.vcf_processor.WorkerConfig.ignore_mismatch_warnings">
+<span class="sig-name descname"><span class="pre">ignore_mismatch_warnings</span></span><a class="headerlink" href="#strvcf_annotator.core.vcf_processor.WorkerConfig.ignore_mismatch_warnings" title="Link to this definition"></a></dt>
+<dd><p>If True, suppresses warnings about reference mismatches between the
+STR panel and VCF REF alleles. Default is False.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool, optional</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="strvcf_annotator.core.vcf_processor.WorkerConfig.mismatch_truth">
+<span class="sig-name descname"><span class="pre">mismatch_truth</span></span><a class="headerlink" href="#strvcf_annotator.core.vcf_processor.WorkerConfig.mismatch_truth" title="Link to this definition"></a></dt>
+<dd><p>Specifies which source to consider as ground truth for mismatches.
+Options are “panel”, “vcf”, or “skip”. Default is “panel”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str, optional</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>The dataclass is frozen to ensure the configuration remains
+immutable once workers are initialized.</p></li>
+<li><p>Instances of this class are passed to <cite>worker_init</cite>, which loads
+the STR reference and exposes these settings to worker tasks.</p></li>
+</ul>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">str_panel_gz</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#id0" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">somatic_mode</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></span><a class="headerlink" href="#id1" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-name descname"><span class="pre">ignore_mismatch_warnings</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></span><a class="headerlink" href="#id2" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id3">
+<span class="sig-name descname"><span class="pre">mismatch_truth</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#id3" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="strvcf_annotator.core.vcf_processor.WorkerConfig.parser">
+<span class="sig-name descname"><span class="pre">parser</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#strvcf_annotator.parsers.base.BaseVCFParser" title="strvcf_annotator.parsers.base.BaseVCFParser"><span class="pre">BaseVCFParser</span></a></span><a class="headerlink" href="#strvcf_annotator.core.vcf_processor.WorkerConfig.parser" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="strvcf_annotator.core.vcf_processor.check_vcf_sorted">
 <span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.vcf_processor.</span></span><span class="sig-name descname"><span class="pre">check_vcf_sorted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vcf_in</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">VariantFile</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/vcf_processor.html#check_vcf_sorted"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.vcf_processor.check_vcf_sorted" title="Link to this definition"></a></dt>
@@ -293,7 +401,7 @@ and position according to the contig order in the header.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="strvcf_annotator.core.vcf_processor.generate_annotated_records">
-<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.vcf_processor.</span></span><span class="sig-name descname"><span class="pre">generate_annotated_records</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vcf_in</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">VariantFile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str_df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parser</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#strvcf_annotator.parsers.base.BaseVCFParser" title="strvcf_annotator.parsers.base.BaseVCFParser"><span class="pre">BaseVCFParser</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">somatic_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_mismatch_warnings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mismatch_truth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'panel'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">VariantRecord</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/vcf_processor.html#generate_annotated_records"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.vcf_processor.generate_annotated_records" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.vcf_processor.</span></span><span class="sig-name descname"><span class="pre">generate_annotated_records</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vcf_in</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">VariantFile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str_panel_gz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parser</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#strvcf_annotator.parsers.base.BaseVCFParser" title="strvcf_annotator.parsers.base.BaseVCFParser"><span class="pre">BaseVCFParser</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">somatic_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_mismatch_warnings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mismatch_truth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'panel'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">VariantRecord</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/vcf_processor.html#generate_annotated_records"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.vcf_processor.generate_annotated_records" title="Link to this definition"></a></dt>
 <dd><p>Generator yielding annotated VCF records.</p>
 <p>Processes VCF records and yields annotated records for variants that
 overlap with STR regions. Handles sorting if needed and optionally filters
@@ -304,7 +412,7 @@ meaningful STR allele change.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>vcf_in</strong> (<em>pysam.VariantFile</em>) – Input VCF file</p></li>
-<li><p><strong>str_df</strong> (<em>pd.DataFrame</em>) – DataFrame with STR regions (from load_str_reference)</p></li>
+<li><p><strong>str_panel_gz</strong> (<em>str</em>) – Path to BGZF-compressed, tabix-indexed STR reference file.</p></li>
 <li><p><strong>parser</strong> (<a class="reference internal" href="#strvcf_annotator.parsers.base.BaseVCFParser" title="strvcf_annotator.parsers.base.BaseVCFParser"><em>BaseVCFParser</em></a><em>, </em><em>optional</em>) – Parser for genotype extraction. Uses GenericParser if None.</p></li>
 <li><p><strong>somatic_mode</strong> (<em>bool</em><em>, </em><em>optional</em>) – Enable somatic filtering. When True, skips variants where both samples
 have identical genotypes. Default is False.</p></li>
@@ -330,7 +438,7 @@ Options are “panel”, “vcf”, or “skip”. Default is “panel”.</p></
 
 <dl class="py function">
 <dt class="sig sig-object py" id="strvcf_annotator.core.vcf_processor.annotate_vcf_to_file">
-<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.vcf_processor.</span></span><span class="sig-name descname"><span class="pre">annotate_vcf_to_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vcf_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str_df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parser</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#strvcf_annotator.parsers.base.BaseVCFParser" title="strvcf_annotator.parsers.base.BaseVCFParser"><span class="pre">BaseVCFParser</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">somatic_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_mismatch_warnings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mismatch_truth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'panel'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/vcf_processor.html#annotate_vcf_to_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.vcf_processor.annotate_vcf_to_file" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.vcf_processor.</span></span><span class="sig-name descname"><span class="pre">annotate_vcf_to_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vcf_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str_panel_gz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parser</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#strvcf_annotator.parsers.base.BaseVCFParser" title="strvcf_annotator.parsers.base.BaseVCFParser"><span class="pre">BaseVCFParser</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">somatic_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_mismatch_warnings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mismatch_truth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'panel'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/vcf_processor.html#annotate_vcf_to_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.vcf_processor.annotate_vcf_to_file" title="Link to this definition"></a></dt>
 <dd><p>Process VCF file and write annotated output.</p>
 <p>Reads a VCF file, annotates variants that overlap with STR regions,
 and writes the annotated records to an output file.</p>
@@ -338,7 +446,7 @@ and writes the annotated records to an output file.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>vcf_path</strong> (<em>str</em>) – Path to input VCF file</p></li>
-<li><p><strong>str_df</strong> (<em>pd.DataFrame</em>) – DataFrame with STR regions (from load_str_reference)</p></li>
+<li><p><strong>str_panel_gz</strong> (<em>str</em>) – Path to BGZF-compressed, tabix-indexed STR reference file.</p></li>
 <li><p><strong>output_path</strong> (<em>str</em>) – Path to output VCF file</p></li>
 <li><p><strong>parser</strong> (<a class="reference internal" href="#strvcf_annotator.parsers.base.BaseVCFParser" title="strvcf_annotator.parsers.base.BaseVCFParser"><em>BaseVCFParser</em></a><em>, </em><em>optional</em>) – Parser for genotype extraction. Uses GenericParser if None.</p></li>
 <li><p><strong>somatic_mode</strong> (<em>bool</em><em>, </em><em>optional</em>) – Enable somatic filtering. When True, skips variants where both samples
@@ -362,8 +470,148 @@ Annotation continues regardless.</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="strvcf_annotator.core.vcf_processor.annotate_one_vcf">
+<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.vcf_processor.</span></span><span class="sig-name descname"><span class="pre">annotate_one_vcf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/vcf_processor.html#annotate_one_vcf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.vcf_processor.annotate_one_vcf" title="Link to this definition"></a></dt>
+<dd><p>Annotate a single VCF file in a worker process.</p>
+<p>Runs <cite>annotate_vcf_to_file</cite> for one input VCF and writes the annotated VCF
+to the given output path. Created to be executed inside a process pool.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>task</strong> (<em>Tuple</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>) – <dl class="simple">
+<dt>(vcf_path, output_path) pair, where:</dt><dd><ul class="simple">
+<li><p>vcf_path is the input VCF (optionally gzipped)</p></li>
+<li><p>output_path is the target annotated VCF path</p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Path to the produced output VCF file.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>Expects STR reference (STR_DF) and worker configuration (WORKER_CONFIG)
+to be initialized once per worker via <cite>worker_init</cite>.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="strvcf_annotator.core.vcf_processor.get_available_ram_bytes">
+<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.vcf_processor.</span></span><span class="sig-name descname"><span class="pre">get_available_ram_bytes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/vcf_processor.html#get_available_ram_bytes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.vcf_processor.get_available_ram_bytes" title="Link to this definition"></a></dt>
+<dd><p>Get available system RAM.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Available RAM in bytes.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="strvcf_annotator.core.vcf_processor.estimate_ram_per_worker_bytes">
+<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.vcf_processor.</span></span><span class="sig-name descname"><span class="pre">estimate_ram_per_worker_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vcf_paths</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/vcf_processor.html#estimate_ram_per_worker_bytes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.vcf_processor.estimate_ram_per_worker_bytes" title="Link to this definition"></a></dt>
+<dd><p>Estimate RAM usage per worker for VCF annotation.</p>
+<p>Provides an estimate of how much memory a single worker process
+might require while annotating one VCF. This estimate is used to cap the
+number of concurrent workers to reduce the risk of out-of-memory (OOM)
+crashes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>vcf_paths</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – List of input VCF paths that will be processed.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Estimated RAM usage per worker in bytes.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>If a VCF is not sorted, the current pipeline may load all records into
+memory for sorting, which can drastically increase memory usage.</p></li>
+<li><p>Even for sorted VCFs, pysam/htslib buffers plus Python object overhead
+can be substantial.</p></li>
+<li><p>Each worker loads the STR reference once. The STR DataFrame and derived
+Python objects often consume several times the BED file size on disk.</p></li>
+</ul>
+<section id="heuristic">
+<h3>Heuristic<a class="headerlink" href="#heuristic" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Identify the largest input file size on disk.</p></li>
+<li><p>If the largest file is gzipped, assume a higher expansion factor for the
+working set (e.g., decompression + object overhead).</p></li>
+<li><p>Add a fixed overhead to account for Python/pysam allocations.</p></li>
+<li><p>Add STR panel RAM estimate as: str_panel_factor * BED_size_on_disk.</p></li>
+</ul>
+<p>This is intentionally conservative to avoid OOM.</p>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="strvcf_annotator.core.vcf_processor.compute_jobs_auto">
+<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.vcf_processor.</span></span><span class="sig-name descname"><span class="pre">compute_jobs_auto</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vcf_paths</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/vcf_processor.html#compute_jobs_auto"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.vcf_processor.compute_jobs_auto" title="Link to this definition"></a></dt>
+<dd><p>Compute an automatic number of concurrent workers.</p>
+<p>Chooses a default number of parallel jobs for processing a directory of VCF
+files, balancing CPU capacity and memory constraints.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n_files</strong> (<em>int</em>) – Number of VCF files that will be processed (after skipping outputs that
+already exist).</p></li>
+<li><p><strong>vcf_paths</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – List of VCF paths used to estimate per-worker memory usage.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Recommended number of concurrent worker processes (at least 1).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The selection follows:
+- jobs_auto = min(cpu_cores, n_files)
+- jobs_auto = min(jobs_auto, floor(available_ram / ram_per_worker_estimate))</p>
+<p>If available RAM cannot be determined, the CPU-based limit is used.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="strvcf_annotator.core.vcf_processor.worker_init">
+<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.vcf_processor.</span></span><span class="sig-name descname"><span class="pre">worker_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#strvcf_annotator.core.vcf_processor.WorkerConfig" title="strvcf_annotator.core.vcf_processor.WorkerConfig"><span class="pre">WorkerConfig</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/vcf_processor.html#worker_init"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.vcf_processor.worker_init" title="Link to this definition"></a></dt>
+<dd><p>Initialize worker process state.</p>
+<p>Called once when a worker process starts. Stores configuration
+values so they can be reused for all VCF files processed by that worker.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference internal" href="#strvcf_annotator.core.vcf_processor.WorkerConfig" title="strvcf_annotator.core.vcf_processor.WorkerConfig"><em>WorkerConfig</em></a>) – <dl class="simple">
+<dt>Configuration object containing:</dt><dd><ul class="simple">
+<li><p>str_panel_gz : path to STR panel BGZF-compressed, tabix-indexed reference file</p></li>
+<li><p>somatic_mode : whether somatic filtering is enabled</p></li>
+<li><p>ignore_mismatch_warnings : whether to suppress mismatch warnings</p></li>
+<li><p>mismatch_truth : rule for handling panel/VCF mismatches</p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>This function is used as the <cite>initializer</cite> for <cite>ProcessPoolExecutor</cite>.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="strvcf_annotator.core.vcf_processor.process_directory">
-<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.vcf_processor.</span></span><span class="sig-name descname"><span class="pre">process_directory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str_bed_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parser</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#strvcf_annotator.parsers.base.BaseVCFParser" title="strvcf_annotator.parsers.base.BaseVCFParser"><span class="pre">BaseVCFParser</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">somatic_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_mismatch_warnings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mismatch_truth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'panel'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/vcf_processor.html#process_directory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.vcf_processor.process_directory" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.vcf_processor.</span></span><span class="sig-name descname"><span class="pre">process_directory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str_panel_gz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parser</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#strvcf_annotator.parsers.base.BaseVCFParser" title="strvcf_annotator.parsers.base.BaseVCFParser"><span class="pre">BaseVCFParser</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">somatic_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_mismatch_warnings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mismatch_truth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'panel'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jobs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/vcf_processor.html#process_directory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.vcf_processor.process_directory" title="Link to this definition"></a></dt>
 <dd><p>Batch process directory of VCF files.</p>
 <p>Processes all VCF files in a directory and writes annotated versions
 to the output directory.</p>
@@ -371,7 +619,7 @@ to the output directory.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>input_dir</strong> (<em>str</em>) – Directory containing input VCF files</p></li>
-<li><p><strong>str_bed_path</strong> (<em>str</em>) – Path to BED file with STR regions</p></li>
+<li><p><strong>str_panel_gz</strong> (<em>str</em>) – Path to BGZF-compressed, tabix-indexed STR panel reference file</p></li>
 <li><p><strong>output_dir</strong> (<em>str</em>) – Directory for output VCF files</p></li>
 <li><p><strong>parser</strong> (<a class="reference internal" href="#strvcf_annotator.parsers.base.BaseVCFParser" title="strvcf_annotator.parsers.base.BaseVCFParser"><em>BaseVCFParser</em></a><em>, </em><em>optional</em>) – Parser for genotype extraction. Uses GenericParser if None.</p></li>
 <li><p><strong>somatic_mode</strong> (<em>bool</em><em>, </em><em>optional</em>) – Enable somatic filtering. When True, skips variants where both samples
@@ -387,6 +635,16 @@ Annotation continues regardless.</p></li>
 </dd>
 </dl>
 </p></li>
+<li><p><strong>jobs</strong> (<em>int</em><em>, </em><em>optional</em>) – <ul>
+<li><dl class="simple">
+<dt>If jobs is None: compute jobs automatically:</dt><dd><p>jobs_auto = min(cpu_cores, n_files)
+jobs_auto = min(jobs_auto, floor(available_ram / ram_per_worker_estimate))</p>
+</dd>
+</dl>
+</li>
+<li><p>If jobs is provided: use it exactly.</p></li>
+</ul>
+</p></li>
 </ul>
 </dd>
 </dl>
@@ -398,7 +656,7 @@ Annotation continues regardless.</p></li>
 <p>Input validation functions.</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="strvcf_annotator.utils.validation.ValidationError">
-<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">strvcf_annotator.utils.validation.</span></span><span class="sig-name descname"><span class="pre">ValidationError</span></span><a class="reference internal" href="_modules/strvcf_annotator/utils/validation.html#ValidationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.utils.validation.ValidationError" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">strvcf_annotator.utils.validation.</span></span><span class="sig-name descname"><span class="pre">ValidationError</span></span><a class="reference internal" href="_modules/strvcf_annotator/utils/validation.html#ValidationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.utils.validation.ValidationError" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 <p>Exception raised for validation errors.</p>
 </dd></dl>
@@ -621,53 +879,88 @@ for writing to VCF files. Handles Flags, Strings, and R-type fields specially.</
 <span id="str-reference-processing"></span><h2>STR reference processing<a class="headerlink" href="#module-strvcf_annotator.core.str_reference" title="Link to this heading"></a></h2>
 <p>STR reference management for BED file loading and region lookups.</p>
 <dl class="py function">
-<dt class="sig sig-object py" id="strvcf_annotator.core.str_reference.load_str_reference">
-<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.str_reference.</span></span><span class="sig-name descname"><span class="pre">load_str_reference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/str_reference.html#load_str_reference"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.str_reference.load_str_reference" title="Link to this definition"></a></dt>
-<dd><p>Load STR reference data from BED file.</p>
-<p>Loads a BED file containing STR (Short Tandem Repeat) regions and converts
-coordinates from 0-based BED format to 1-based VCF format. Calculates the
-number of repeat units for each region.</p>
+<dt class="sig sig-object py" id="strvcf_annotator.core.str_reference.is_valid_tabix">
+<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.str_reference.</span></span><span class="sig-name descname"><span class="pre">is_valid_tabix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gz_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/str_reference.html#is_valid_tabix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.str_reference.is_valid_tabix" title="Link to this definition"></a></dt>
+<dd><p>Check that a BGZF file has a valid tabix index.</p>
+<p>Returns True only if:
+- .tbi exists
+- pysam can open the file
+- index is readable</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="strvcf_annotator.core.str_reference.sort_bed_file">
+<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.str_reference.</span></span><span class="sig-name descname"><span class="pre">sort_bed_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bed_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chrom_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/str_reference.html#sort_bed_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.str_reference.sort_bed_file" title="Link to this definition"></a></dt>
+<dd><p>Sort a BED-like file by chromosome and start coordinate.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>str_path</strong> (<em>str</em>) – Path to BED file with STR regions</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bed_path</strong> (<em>str</em>) – Path to input BED file (tab-delimited).</p></li>
+<li><p><strong>output_path</strong> (<em>str</em>) – Path to write the sorted BED file.</p></li>
+<li><p><strong>chrom_col</strong> (<em>int</em><em>, </em><em>optional</em>) – Zero-based column index for chromosome. Default is 0.</p></li>
+<li><p><strong>start_col</strong> (<em>int</em><em>, </em><em>optional</em>) – Zero-based column index for start coordinate. Default is 1.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>DataFrame with columns: CHROM, START, END, PERIOD, RU, COUNT
-- CHROM: Chromosome name
-- START: 1-based start position (converted from BED 0-based)
-- END: 1-based end position
-- PERIOD: Length of repeat unit
-- RU: Repeat unit sequence
-- COUNT: Number of repeat units in the region</p>
+<dd class="field-even"><p>Path to the sorted BED file.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>pd.DataFrame</p>
+<dd class="field-odd"><p>str</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>BED files use 0-based coordinates, but VCF files use 1-based coordinates.
-This function converts START positions by adding 1. END positions are kept
-as-is since BED END is exclusive and VCF END is inclusive.</p>
+<ul class="simple">
+<li><p>This function loads the BED into memory via pandas. For extremely large
+BED files, consider an external sort.</p></li>
+<li><p>Sorting is lexicographic by chromosome, then numeric by start.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="strvcf_annotator.core.str_reference.load_str_reference">
+<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.str_reference.</span></span><span class="sig-name descname"><span class="pre">load_str_reference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/str_reference.html#load_str_reference"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.str_reference.load_str_reference" title="Link to this definition"></a></dt>
+<dd><p>Ensure a BED file is BGZF-compressed and tabix-indexed.</p>
+<p>This function:
+- Accepts a BED path (.bed or .bed.gz).
+- If the input is already .gz and has a .tbi index, returns it.
+- Otherwise, creates a sorted BED (if needed), BGZF-compresses it, and</p>
+<blockquote>
+<div><p>creates a tabix index (preset=”bed”).</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>bed_path</strong> (<em>str</em>) – Path to input BED file (.bed or .bed.gz).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Path to the BGZF-compressed, tabix-indexed BED file (<a href="#id4"><span class="problematic" id="id5">*</span></a>.gz).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>Tabix indexing requires the BED to be sorted by chromosome and start.</p></li>
+<li><p>This function uses <cite>pysam.tabix_compress</cite> and <cite>pysam.tabix_index</cite>.</p></li>
+</ul>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="strvcf_annotator.core.str_reference.find_overlapping_str">
-<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.str_reference.</span></span><span class="sig-name descname"><span class="pre">find_overlapping_str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str_df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chrom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/str_reference.html#find_overlapping_str"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.str_reference.find_overlapping_str" title="Link to this definition"></a></dt>
-<dd><p>Find STR region overlapping with variant coordinates.</p>
-<p>Searches for an STR region that overlaps with the given variant position.
-Uses efficient binary search on sorted DataFrame.</p>
+<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.str_reference.</span></span><span class="sig-name descname"><span class="pre">find_overlapping_str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str_panel_gz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chrom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/str_reference.html#find_overlapping_str"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.str_reference.find_overlapping_str" title="Link to this definition"></a></dt>
+<dd><p>Find STR region overlapping with variant coordinates using tabix index.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>str_df</strong> (<em>pd.DataFrame</em>) – DataFrame with STR regions (from load_str_reference)</p></li>
-<li><p><strong>chrom</strong> (<em>str</em>) – Chromosome name</p></li>
-<li><p><strong>pos</strong> (<em>int</em>) – Variant start position (1-based)</p></li>
-<li><p><strong>end</strong> (<em>int</em>) – Variant end position (1-based)</p></li>
+<li><p><strong>str_panel_gz</strong> (<em>str</em>) – Path to BGZF-compressed, tabix-indexed STR reference file.</p></li>
+<li><p><strong>chrom</strong> (<em>str</em>) – Chromosome name.</p></li>
+<li><p><strong>pos</strong> (<em>int</em>) – Variant start position (1-based).</p></li>
+<li><p><strong>end</strong> (<em>int</em>) – Variant end position (1-based).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Dictionary with STR region data if overlap found, None otherwise
-Contains keys: CHROM, START, END, PERIOD, RU, COUNT</p>
+<dd class="field-even"><p>Dictionary with STR region data if overlap found, None otherwise.
+Keys: CHROM, START, END, PERIOD, RU, COUNT</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Optional[Dict]</p>
@@ -677,18 +970,18 @@ Contains keys: CHROM, START, END, PERIOD, RU, COUNT</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="strvcf_annotator.core.str_reference.get_str_at_position">
-<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.str_reference.</span></span><span class="sig-name descname"><span class="pre">get_str_at_position</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str_df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chrom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/str_reference.html#get_str_at_position"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.str_reference.get_str_at_position" title="Link to this definition"></a></dt>
-<dd><p>Get STR region containing a specific position.</p>
+<span class="sig-prename descclassname"><span class="pre">strvcf_annotator.core.str_reference.</span></span><span class="sig-name descname"><span class="pre">get_str_at_position</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">str_panel_gz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chrom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/core/str_reference.html#get_str_at_position"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.core.str_reference.get_str_at_position" title="Link to this definition"></a></dt>
+<dd><p>Get STR region containing a specific position using tabix index.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>str_df</strong> (<em>pd.DataFrame</em>) – DataFrame with STR regions (from load_str_reference)</p></li>
-<li><p><strong>chrom</strong> (<em>str</em>) – Chromosome name</p></li>
-<li><p><strong>pos</strong> (<em>int</em>) – Position to query (1-based)</p></li>
+<li><p><strong>str_panel_gz</strong> (<em>str</em>) – Path to BGZF-compressed, tabix-indexed STR reference file.</p></li>
+<li><p><strong>chrom</strong> (<em>str</em>) – Chromosome name.</p></li>
+<li><p><strong>pos</strong> (<em>int</em>) – Position to query (1-based).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Dictionary with STR region data if position is within an STR, None otherwise</p>
+<dd class="field-even"><p>Dictionary with STR region data if position is within an STR, None otherwise.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Optional[Dict]</p>
@@ -901,7 +1194,7 @@ of the motif with no interruptions or variations.</p>
 <p>Abstract base class for VCF parsers.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="strvcf_annotator.parsers.base.BaseVCFParser">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">strvcf_annotator.parsers.base.</span></span><span class="sig-name descname"><span class="pre">BaseVCFParser</span></span><a class="reference internal" href="_modules/strvcf_annotator/parsers/base.html#BaseVCFParser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.parsers.base.BaseVCFParser" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">strvcf_annotator.parsers.base.</span></span><span class="sig-name descname"><span class="pre">BaseVCFParser</span></span><a class="reference internal" href="_modules/strvcf_annotator/parsers/base.html#BaseVCFParser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.parsers.base.BaseVCFParser" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p>Abstract base class for VCF parsers.</p>
 <p>Defines the interface for extracting genotype and variant information
@@ -909,7 +1202,7 @@ from VCF records in a standardized way. All parser implementations must
 inherit from this class and implement all abstract methods.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="strvcf_annotator.parsers.base.BaseVCFParser.get_genotype">
-<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_genotype</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">VariantRecord</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/parsers/base.html#BaseVCFParser.get_genotype"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.parsers.base.BaseVCFParser.get_genotype" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_genotype</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">VariantRecord</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/parsers/base.html#BaseVCFParser.get_genotype"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.parsers.base.BaseVCFParser.get_genotype" title="Link to this definition"></a></dt>
 <dd><p>Extract genotype as (allele1, allele2) or None if unknown.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -929,7 +1222,7 @@ inherit from this class and implement all abstract methods.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="strvcf_annotator.parsers.base.BaseVCFParser.has_variant">
-<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">has_variant</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">VariantRecord</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/parsers/base.html#BaseVCFParser.has_variant"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.parsers.base.BaseVCFParser.has_variant" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">has_variant</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">VariantRecord</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/parsers/base.html#BaseVCFParser.has_variant"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.parsers.base.BaseVCFParser.has_variant" title="Link to this definition"></a></dt>
 <dd><p>Check if sample has variant even when GT is unknown.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -949,7 +1242,7 @@ inherit from this class and implement all abstract methods.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="strvcf_annotator.parsers.base.BaseVCFParser.extract_info">
-<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">extract_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">VariantRecord</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/strvcf_annotator/parsers/base.html#BaseVCFParser.extract_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.parsers.base.BaseVCFParser.extract_info" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">extract_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">VariantRecord</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/strvcf_annotator/parsers/base.html#BaseVCFParser.extract_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.parsers.base.BaseVCFParser.extract_info" title="Link to this definition"></a></dt>
 <dd><p>Extract additional fields (AD, DP, etc.) as dictionary.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -969,7 +1262,7 @@ inherit from this class and implement all abstract methods.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="strvcf_annotator.parsers.base.BaseVCFParser.validate_record">
-<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">validate_record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">VariantRecord</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/parsers/base.html#BaseVCFParser.validate_record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.parsers.base.BaseVCFParser.validate_record" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">validate_record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">VariantRecord</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/strvcf_annotator/parsers/base.html#BaseVCFParser.validate_record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.parsers.base.BaseVCFParser.validate_record" title="Link to this definition"></a></dt>
 <dd><p>Validate that record is compatible with this parser.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -992,7 +1285,7 @@ inherit from this class and implement all abstract methods.</p>
 <p>Generic parser for standard VCF format fields.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="strvcf_annotator.parsers.generic.GenericParser">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">strvcf_annotator.parsers.generic.</span></span><span class="sig-name descname"><span class="pre">GenericParser</span></span><a class="reference internal" href="_modules/strvcf_annotator/parsers/generic.html#GenericParser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.parsers.generic.GenericParser" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">strvcf_annotator.parsers.generic.</span></span><span class="sig-name descname"><span class="pre">GenericParser</span></span><a class="reference internal" href="_modules/strvcf_annotator/parsers/generic.html#GenericParser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#strvcf_annotator.parsers.generic.GenericParser" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#strvcf_annotator.parsers.base.BaseVCFParser" title="strvcf_annotator.parsers.base.BaseVCFParser"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseVCFParser</span></code></a></p>
 <p>Generic parser for standard VCF format fields.</p>
 <p>Handles standard VCF FORMAT fields including GT (genotype), AD (allelic depth),
